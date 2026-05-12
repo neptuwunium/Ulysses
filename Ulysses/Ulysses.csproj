@@ -1,0 +1,32 @@
+﻿<!--
+SPDX-FileCopyrightText: 2026 Neptuwunium
+
+SPDX-License-Identifier: EUPL-1.2
+-->
+
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net11.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+	  <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Neptune\Charon\Charon.csproj" />
+    <ProjectReference Include="..\Neptune\Pluto.SourceGen\Pluto.SourceGen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false"/>
+	  <ProjectReference Include="..\Neptune\Pluto\Pluto.csproj" />
+    <ProjectReference Include="..\Neptune\Triton\Triton.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Resources\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Resources\DPLXor.bin" />
+    <EmbeddedResource Include="Resources\DPLXor.bin" />
+  </ItemGroup>
+
+</Project>

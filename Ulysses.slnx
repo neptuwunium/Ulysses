@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/Neptune/">
+    <Project Path="Neptune/Charon/Charon.csproj" />
+    <Project Path="Neptune/Pluto.SourceGen/Pluto.SourceGen.csproj" />
+    <Project Path="Neptune/Pluto/Pluto.csproj" />
+    <Project Path="Neptune/Triton/Triton.csproj" />
+  </Folder>
+  <Project Path="Ulysses.DPLUnpack/Ulysses.DPLUnpack.csproj" />
+  <Project Path="Ulysses/Ulysses.csproj" />
+</Solution>
