@@ -26,7 +26,7 @@ foreach (var pacPath in new FileEnumerator(args[0], "*.PAC")) {
 	using var dpl = new DPLFile(pacPath);
 
 	foreach (var (id, (_, header)) in dpl.FHMTable) {
-		var path = Path.Combine(output, $"{header.GroupId}_0x{id.Value:x08}");
+		var path = Path.Combine(output, header.ResourceId.DebugString);
 
 		using var buf = dpl.ReadFile(id);
 		if (buf == null) {
@@ -35,6 +35,8 @@ foreach (var pacPath in new FileEnumerator(args[0], "*.PAC")) {
 		}
 		Console.WriteLine($"{pacName}: {id}");
 
+		// a fhm is basically anything. textures for example are split up into several slices.
+		// need to check if fhm[0] is something we can read and then rebuild the original asset so it is easier to read
 		using var fhm = new FHMAsset(buf, 0, header);
 		ProcessFHM(path, fhm);
 	}
@@ -43,6 +45,16 @@ foreach (var pacPath in new FileEnumerator(args[0], "*.PAC")) {
 return;
 
 void ProcessFHM(string path, FHMAsset fhm) {
+	if (fhm.Count > 0) {
+		using var rebuiltFile = fhm.RebuildAsset(out var ext);
+		if (rebuiltFile != null) {
+			using var stream = new FileStream(path + (ext ?? ".bin"), FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
+			Console.WriteLine(stream.Name);
+			stream.Write(rebuiltFile.Span);
+			return;
+		}
+	}
+
 	var idx = 0;
 	foreach (var itemHeader in fhm.ItemHeaders) {
 		var currentPath = Path.Combine(path, (idx++).ToString());
@@ -55,7 +67,7 @@ void ProcessFHM(string path, FHMAsset fhm) {
 			var dir = Path.GetDirectoryName(currentPath)!;
 			Directory.CreateDirectory(dir);
 			using var stream = new FileStream(currentPath + ".bin", FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
-			Console.WriteLine(currentPath);
+			Console.WriteLine(stream.Name);
 			stream.Write(buf.Span);
 		} else {
 			using var child = fhm.GetChildItem(itemHeader);

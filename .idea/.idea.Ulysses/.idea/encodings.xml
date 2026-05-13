@@ -7,5 +7,5 @@ SPDX-License-Identifier: EUPL-1.2
 -->
 
 <project version="4">
-  <component name="Encoding" addBOMForNewFiles="with BOM under Windows, with no BOM otherwise" />
+  <component name="Encoding" addBOMForNewFiles="with no BOM" />
 </project>

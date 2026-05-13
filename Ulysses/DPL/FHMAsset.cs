@@ -73,4 +73,11 @@ public sealed class FHMAsset : IDisposable {
 
 		Pool.Dispose();
 	}
+
+	public IRentedArray<byte>? RebuildAsset(out string? ext) {
+		ext = null;
+		// todo: check magic for .act .mis, .nut, .num, .lua, etc
+
+		return null;
+	}
 }
