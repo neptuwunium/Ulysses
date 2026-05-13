@@ -8,7 +8,8 @@ using System.Runtime.InteropServices;
 using Charon.Compression;
 using Pluto;
 using Pluto.IO.Binary;
-using Ulysses.DPL.Struct;
+using Ulysses.Struct.DPL;
+using Ulysses.Struct.FHM;
 
 namespace Ulysses.DPL;
 
@@ -16,10 +17,7 @@ public sealed class DPLFile : IDisposable {
 	public DPLFile(string path) {
 		File = MemoryMappedFile.CreateFromFile(path, FileMode.Open, null, 0, MemoryMappedFileAccess.Read);
 		using var reader = new MemoryMapBinaryReader(File, leaveOpen: true);
-		Header = reader.Read<DPLHeader>();
-		if (IsBigEndian) {
-			Header = Header.ReverseEndianness();
-		}
+		Header = reader.Read<DPLHeader>().ReverseEndianness();
 
 		FHMTable = ObjectPool<Dictionary<ResourceId, (int Offset, FHMHeader Header)>>.Rent();
 		FHMTable.Clear();
@@ -31,10 +29,7 @@ public sealed class DPLFile : IDisposable {
 
 		for (var i = 0; i < Header.Count; i++) {
 			var offset = reader.Position;
-			var header = reader.Read<FHMHeader>();
-			if (header.ACE.Magic.IsBigEndian) {
-				header = header.ReverseEndianness();
-			}
+			var header = reader.Read<FHMHeader>().ReverseEndianness();
 
 			reader.Skip<FHMMemoryRange>(header.MemoryRangeCount);
 
@@ -46,7 +41,6 @@ public sealed class DPLFile : IDisposable {
 	public MemoryMappedFile File { get; set; }
 	public Dictionary<ResourceId, (int Offset, FHMHeader Header)> FHMTable { get; set; }
 	public Dictionary<uint, ResourceId> GroupToResourceIdMap { get; set; }
-	public bool IsBigEndian => Header.ACE.Magic.IsBigEndian;
 	public DPLHeader Header { get; }
 
 	public FHMMemoryRange GetMemoryRange(ResourceId resourceId, int index) {
@@ -57,8 +51,7 @@ public sealed class DPLFile : IDisposable {
 		var offset = info.Offset + Unsafe.SizeOf<FHMHeader>() + Unsafe.SizeOf<FHMMemoryRange>() * index;
 		using var reader = new MemoryMapBinaryReader(File, leaveOpen: true);
 		reader.Position = offset;
-		var range = reader.Read<FHMMemoryRange>();
-		return info.Header.ACE.Magic.IsBigEndian ? range.ReverseEndianness() : range;
+		return reader.Read<FHMMemoryRange>().ReverseEndianness();
 	}
 
 	public RentedArray<byte>? ReadFile(ResourceId resourceId) {
@@ -75,13 +68,9 @@ public sealed class DPLFile : IDisposable {
 			var offset = 0;
 
 			while (offset < info.Header.MemorySize) {
-				var header = reader.Read<DPLCompressionHeader>();
+				var header = reader.Read<DPLCompressionHeader>().ReverseEndianness();
 				if (header.Magic != 'C') {
 					throw new InvalidDataException("block failed magic");
-				}
-
-				if (IsBigEndian) {
-					header = header.ReverseEndianness();
 				}
 
 				using var buffer = reader.ReadBytes(header.DiskSize);

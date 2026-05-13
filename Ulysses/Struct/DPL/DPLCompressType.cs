@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: EUPL-1.2
 
-namespace Ulysses.DPL.Struct;
+namespace Ulysses.Struct.DPL;
 
 public enum DPLCompressType : byte {
 	Lz77,

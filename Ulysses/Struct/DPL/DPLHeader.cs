@@ -5,11 +5,11 @@
 using System.Runtime.InteropServices;
 using Pluto.SourceGen.ReverseEndiannessGenerator;
 
-namespace Ulysses.DPL.Struct;
+namespace Ulysses.Struct.DPL;
 
 [EndianSwappable, StructLayout(LayoutKind.Sequential, Pack = 8)]
-public partial record struct ACEHeader {
-	public ACEMagic Magic { get; set; }
-	public uint Version { get; set; }
-	public uint Date { get; set; }
+public partial record struct DPLHeader {
+	public ACEHeader ACE { get; set; }
+	public int Count { get; set; }
+	public int Size { get; set; }
 }

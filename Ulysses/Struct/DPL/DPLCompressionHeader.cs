@@ -5,7 +5,7 @@
 using System.Runtime.InteropServices;
 using Pluto.SourceGen.ReverseEndiannessGenerator;
 
-namespace Ulysses.DPL.Struct;
+namespace Ulysses.Struct.DPL;
 
 [EndianSwappable, StructLayout(LayoutKind.Sequential, Pack = 8, Size = 0x10)]
 public partial record struct DPLCompressionHeader {

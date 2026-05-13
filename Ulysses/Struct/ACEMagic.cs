@@ -4,7 +4,7 @@
 
 using System.Runtime.InteropServices;
 
-namespace Ulysses.DPL.Struct;
+namespace Ulysses.Struct;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 4)]
 public record struct ACEMagic {

@@ -19,24 +19,37 @@ public static class ResourceIdRegistry {
 		for (var i = 0; i < 1000; i++) {
 			var test = $"DPL_EMBLEM_{i:D3}";
 			NameLookup[Hash(test)] = test;
+
+			test = $"DPL_2DIMAGE_EMBL_{i:D3}";
+			NameLookup[Hash(test)] = test;
+
+			test = $"DPL_2DIMAGE_EMB_{i:D3}";
+			NameLookup[Hash(test)] = test;
 		}
 
-		for (var i = 0; i <= 64; i++) {
-			var test = $"DPL_DLC_CATALOG_{i:D}";
+		for (var i = 1; i < 9; i++) {
+			var test = $"DPL_2DIMAGE_GUIDE_{i:D}";
+			NameLookup[Hash(test)] = test;
+		}
+
+		for (var i = 1; i < 18; i++) {
+			var test = $"DPL_2DIMAGE_PARTS_{i:D}";
+			NameLookup[Hash(test)] = test;
+		}
+
+		for (var i = 1; i < 40; i++) {
+			var test = $"DPL_2DIMAGE_GIFT_{i:D}";
+			NameLookup[Hash(test)] = test;
+		}
+
+		for (var i = 1; i < 8; i++) {
+			var test = $"DPL_2DIMAGE_ADS_COMMON_{i:D}";
 			NameLookup[Hash(test)] = test;
 		}
 
 		NameLookup[Hash("DPL_DEVELOPMENT")] = "DPL_DEVELOPMENT";
 		NameLookup[Hash("DPL_INFORMATION")] = "DPL_INFORMATION";
-		NameLookup[Hash("DPL_TSS_MISC")] = "DPL_TSS_MISC";
-		NameLookup[Hash("DPL_TSS_INFO")] = "DPL_TSS_INFO";
-		NameLookup[Hash("DPL_TSS_DROP_ITEM")] = "DPL_TSS_DROP_ITEM";
-		NameLookup[Hash("DPL_TSS_SALES_LIST")] = "DPL_TSS_SALES_LIST";
-		NameLookup[Hash("DPL_TSS_ITEM")] = "DPL_TSS_ITEM";
-		NameLookup[Hash("DPL_UI_LOADING_TIP1")] = "DPL_UI_LOADING_TIP1";
 		NameLookup[Hash("DPL_UI_STARTUP")] = "DPL_UI_STARTUP";
-		NameLookup[Hash("DPL_UI_TSS_COMMON")] = "DPL_UI_TSS_COMMON";
-		NameLookup[Hash("DPL_UI_TSS_MENU")] = "DPL_UI_TSS_MENU";
 	}
 
 	public static Dictionary<uint, string> NameLookup { get; } = [];

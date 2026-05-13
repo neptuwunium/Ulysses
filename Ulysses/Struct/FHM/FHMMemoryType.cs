@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: EUPL-1.2
 
-namespace Ulysses.DPL.Struct;
+namespace Ulysses.Struct.FHM;
 
 public enum FHMMemoryType : ushort {
 	CPU,

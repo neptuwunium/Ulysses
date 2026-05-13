@@ -2,9 +2,11 @@
 //
 // SPDX-License-Identifier: EUPL-1.2
 
+using System.Runtime.InteropServices;
 using Pluto.IO.FileSystem;
+using Ulysses;
 using Ulysses.DPL;
-using Ulysses.DPL.Struct;
+using Ulysses.Struct.FHM;
 
 if (args.Length < 2) {
 	Console.WriteLine("Usage: Ulysses.DPLUnpack.exe <input> <output>");
@@ -34,6 +36,11 @@ foreach (var pacPath in new FileEnumerator(args[0], "*.PAC")) {
 			continue;
 		}
 		Console.WriteLine($"{pacName}: {id}");
+
+		#if DEBUG
+		using var stream = new FileStream(path + ".fhm", FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
+		stream.Write(buf.Span);
+		#endif
 
 		// a fhm is basically anything. textures for example are split up into several slices.
 		// need to check if fhm[0] is something we can read and then rebuild the original asset so it is easier to read
@@ -66,7 +73,11 @@ void ProcessFHM(string path, FHMAsset fhm) {
 			}
 			var dir = Path.GetDirectoryName(currentPath)!;
 			Directory.CreateDirectory(dir);
-			using var stream = new FileStream(currentPath + ".bin", FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
+			var ext = (buf.Length >= 4 ? MemoryMarshal.Read<ResourceMagic>(buf.Span) : 0).Ext;
+			if (ext.Length == 0 || ext[0] != '.') {
+				ext = ".bin";
+			}
+			using var stream = new FileStream(currentPath + ext, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
 			Console.WriteLine(stream.Name);
 			stream.Write(buf.Span);
 		} else {

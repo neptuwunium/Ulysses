@@ -5,7 +5,7 @@
 using System.Runtime.InteropServices;
 using Pluto.SourceGen.ReverseEndiannessGenerator;
 
-namespace Ulysses.DPL.Struct;
+namespace Ulysses.Struct.FHM;
 
 [EndianSwappable, StructLayout(LayoutKind.Sequential, Pack = 8)]
 public partial record struct FHMHeader {

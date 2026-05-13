@@ -6,7 +6,7 @@ using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Pluto.IO.Binary;
-using Ulysses.DPL.Struct;
+using Ulysses.Struct.FHM;
 
 namespace Ulysses.DPL;
 
@@ -15,40 +15,24 @@ public sealed class FHMAsset : IDisposable {
 		Pool = pool;
 		Header = header;
 		Offset = offset;
-
-		Count = BinaryPrimitives.ReadInt32LittleEndian(pool.Span[offset..]);
-		if (IsBigEndian) {
-			Count = BinaryPrimitives.ReverseEndianness(Count);
-		}
+		Count = BinaryPrimitives.ReadInt32BigEndian(pool.Span[offset..]);
 	}
 
 	public FHMHeader Header { get; }
-	public bool IsBigEndian => Header.ACE.Magic.IsBigEndian;
 	public int Count { get; }
 	public int Offset { get; set; }
 	public IRentedArray<byte> Pool { get; set; }
 
-	public FHMItemHeader GetItemHeader(int index) {
-		var item = MemoryMarshal.Read<FHMItemHeader>(Pool.Span[(Offset + 4 + index * Unsafe.SizeOf<FHMItemHeader>())..]);
-		if (IsBigEndian) {
-			item = item.ReverseEndianness();
-		}
-
-		return item;
-	}
+	public FHMItemHeader GetItemHeader(int index) => MemoryMarshal.Read<FHMItemHeader>(Pool.Span[(Offset + 4 + index * Unsafe.SizeOf<FHMItemHeader>())..]).ReverseEndianness();
 
 	public FHMItemDataHeader GetItemDataHeader(int index) => GetItemDataHeader(GetItemHeader(index));
+
 	public FHMItemDataHeader GetItemDataHeader(FHMItemHeader item) {
 		if (item.Type != FHMItemType.Normal) {
 			return default;
 		}
 
-		var dataItem = MemoryMarshal.Read<FHMItemDataHeader>(Pool.Span[(Offset + item.Offset)..]);
-		if (IsBigEndian) {
-			dataItem = dataItem.ReverseEndianness();
-		}
-
-		return dataItem;
+		return MemoryMarshal.Read<FHMItemDataHeader>(Pool.Span[(Offset + item.Offset)..]).ReverseEndianness();
 	}
 
 	public IRentedArray<byte> GetItemData(int index) => GetItemData(GetItemDataHeader(index));

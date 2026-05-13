@@ -5,11 +5,13 @@
 using System.Runtime.InteropServices;
 using Pluto.SourceGen.ReverseEndiannessGenerator;
 
-namespace Ulysses.DPL.Struct;
+namespace Ulysses.Struct.FHM;
 
 [EndianSwappable, StructLayout(LayoutKind.Sequential, Pack = 8)]
-public partial record struct DPLHeader {
-	public ACEHeader ACE { get; set; }
-	public int Count { get; set; }
+public partial record struct FHMItemDataHeader {
+	public ushort MemoryIndex { get; set; }
+	public FHMMemoryType MemoryType { get; set; }
+	public int Alignment { get; set; }
+	public int Offset { get; set; }
 	public int Size { get; set; }
 }
