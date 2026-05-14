@@ -62,7 +62,7 @@ public static class IdRegistry {
 		var value = Hash(name);
 
 		if (!Freeze) {
-			Lookup[value] = name;
+			Lookup.TryAdd(value, name);
 		}
 
 		return value;
@@ -70,7 +70,7 @@ public static class IdRegistry {
 
 	public static void Register(HashId value, string name) {
 		if (!Freeze) {
-			Lookup[value] = name;
+			Lookup.TryAdd(value, name);
 		}
 	}
 }

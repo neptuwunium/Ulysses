@@ -12,6 +12,7 @@ using Ulysses.Struct.FHM;
 
 var flags = CommandLineFlags.Singleton<ProgramFlags>.Instance;
 
+var dplFiles = new List<(string, DPLFile)>();
 foreach (var pacPath in new FileEnumerator(flags.InputPath, "*.PAC")) {
 	var pacName = Path.GetFileNameWithoutExtension(pacPath);
 	var pacNumber = pacName.Length > 4 ? int.Parse(pacName[4..]) : 0;
@@ -22,12 +23,19 @@ foreach (var pacPath in new FileEnumerator(flags.InputPath, "*.PAC")) {
 			continue;
 	}
 
+	dplFiles.Add((pacName, new DPLFile(pacPath)));
+}
+
+foreach (var (pacName, dpl) in dplFiles) {
 	var output = Path.Combine(flags.OutputPath, pacName);
 	Directory.CreateDirectory(output);
-	using var dpl = new DPLFile(pacPath);
 
 	foreach (var (id, (_, header)) in dpl.FHMTable) {
-		var path = Path.Combine(output, header.HashId.GetDebugString("DPL"));
+		var hashStr = header.HashId.GetDebugString("DPL");
+		if (hashStr.StartsWith("DPL::[0x")) {
+			hashStr = header.HashId.ToString();
+		}
+		var path = Path.Combine(output, hashStr);
 		using var buf = dpl.ReadFile(id);
 		if (buf == null) {
 			Console.WriteLine($"{pacName}: cannot export {id}");
@@ -46,6 +54,8 @@ foreach (var pacPath in new FileEnumerator(flags.InputPath, "*.PAC")) {
 		using var fhm = new FHMFile(buf, 0, header);
 		ProcessFHM(path, fhm);
 	}
+
+	dpl.Dispose();
 }
 
 return;
