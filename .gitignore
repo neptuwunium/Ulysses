@@ -334,6 +334,4 @@ ASALocalRun/
 
 nuget.config
 
-ClassData
-
-dist/
+.vscode
