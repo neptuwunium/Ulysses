@@ -3,8 +3,6 @@
 // SPDX-License-Identifier: EUPL-1.2
 
 using System.Runtime.InteropServices;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using Pluto.CommandLine;
 using Pluto.IO.FileSystem;
 using Ulysses;
@@ -13,11 +11,6 @@ using Ulysses.Struct;
 using Ulysses.Struct.FHM;
 
 var flags = CommandLineFlags.Singleton<ProgramFlags>.Instance;
-
-var jsonSettings = new JsonSerializerOptions {
-	WriteIndented = true,
-	NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals,
-};
 
 foreach (var pacPath in new FileEnumerator(flags.InputPath, "*.PAC")) {
 	var pacName = Path.GetFileNameWithoutExtension(pacPath);
@@ -87,18 +80,7 @@ void ProcessFHM(string path, FHMFile fhm) {
 			Console.WriteLine(Path.GetRelativePath(flags.OutputPath, currentPath + ext));
 
 			if (flags.Convert) {
-				var didConvert = true;
-				switch (magic) {
-					case ResourceMagic.Table: {
-						using var table = new LVSTableFile(buf, true);
-						using var stream = new FileStream(currentPath + ".json", FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
-						JsonSerializer.Serialize(stream, table, jsonSettings);
-						break;
-					}
-					default:
-						didConvert = false;
-						break;
-				}
+				var didConvert = ProcessAsset.Convert(magic, buf, currentPath);
 
 				if (flags.OnlyConvert) {
 					continue;
@@ -109,9 +91,8 @@ void ProcessFHM(string path, FHMFile fhm) {
 				}
 			}
 
-			using (var stream = new FileStream(currentPath + ext, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite)) {
-				stream.Write(buf.Span);
-			}
+			using var stream = new FileStream(currentPath + ext, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
+			stream.Write(buf.Span);
 		} else {
 			using var child = fhm.GetChildItem(itemHeader);
 			if (child == null) {

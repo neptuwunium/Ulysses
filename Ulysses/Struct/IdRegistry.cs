@@ -19,6 +19,7 @@ public static class IdRegistry {
 	static IdRegistry() {
 		ParseTypeFile("Resources/DPL.name");
 		ParseTypeFile("Resources/LVST.name");
+		ParseTypeFile("Resources/ACT.name");
 	}
 
 	public static Dictionary<uint, string> Lookup { get; } = [];
@@ -65,5 +66,11 @@ public static class IdRegistry {
 		}
 
 		return value;
+	}
+
+	public static void Register(HashId value, string name) {
+		if (!Freeze) {
+			Lookup[value] = name;
+		}
 	}
 }

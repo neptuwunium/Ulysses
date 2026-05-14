@@ -93,10 +93,12 @@ public sealed class LVSTableFile : IDisposable {
 			LVSTColumnType.None => throw new UnreachableException(),
 			LVSTColumnType.String when info is { ElementCount: 1, ElementSize: 1 } => Read<byte>(columnIndex, rowIndex),
 			LVSTColumnType.String => ReadString(columnIndex, rowIndex),
+			LVSTColumnType.Buffer when info is { ElementSize: 1 } => ReadString(columnIndex, rowIndex),
 			LVSTColumnType.Float when info is { ElementCount: 1, ElementSize: 4 } => Read<float>(columnIndex, rowIndex),
 			LVSTColumnType.Int when info is { ElementCount: 1, ElementSize: 4 } => Read<int>(columnIndex, rowIndex),
 			LVSTColumnType.Hash when info is { ElementCount: 1, ElementSize: 4 } => Read<HashId>(columnIndex, rowIndex),
 			LVSTColumnType.Date when info is { ElementCount: 1, ElementSize: 4 } => Read<ACEDate>(columnIndex, rowIndex),
+			LVSTColumnType.Time when info is { ElementCount: 1, ElementSize: 4 } => Read<ACETime>(columnIndex, rowIndex),
 			LVSTColumnType.Null => null,
 			_ => throw new NotSupportedException(info.ToString())
 		};
@@ -150,6 +152,25 @@ public sealed class LVSTableFile : IDisposable {
 		};
 	}
 
+	public IRentedArray<byte>? ReadBuffer(int columnIndex, int rowIndex) {
+		if (columnIndex > ColumnOffsets.Length) {
+			return null;
+		}
+
+		var info = ColumnInfos[columnIndex];
+		if (info.RowCount == 0) {
+			return null;
+		}
+
+		if (rowIndex > info.RowCount) {
+			rowIndex %= info.RowCount; // maybe set it to max?
+		}
+
+		var size = info.ElementCount * info.ElementSize;
+		var offset = ColumnOffsets[columnIndex] + Unsafe.SizeOf<LVSTColumnInfo>() + size * rowIndex;
+		return new UnownedRentedArray<byte>(Buffer, offset, size);
+	}
+
 	public Dictionary<HashId, object?> GetRow(int row, Dictionary<HashId, object?>? cells = null) {
 		if (cells != null) {
 			// shared object
@@ -169,6 +190,17 @@ public sealed class LVSTableFile : IDisposable {
 	public IEnumerable<Dictionary<HashId, object?>> GetRows(Dictionary<HashId, object?>? cells = null) {
 		for (var i = 0; i < RowCount; ++i) {
 			yield return GetRow(i, cells);
+		}
+	}
+
+	public IEnumerable<object?> GetColumn(HashId column) {
+		var columnIndex = ColumnIds.Span.IndexOf(column);
+		if (columnIndex == -1) {
+			yield break;
+		}
+
+		for (var i = 0; i < RowCount; ++i) {
+			yield return ReadCell(columnIndex, i);
 		}
 	}
 
