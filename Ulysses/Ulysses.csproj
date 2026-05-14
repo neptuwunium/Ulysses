@@ -27,6 +27,8 @@ SPDX-License-Identifier: EUPL-1.2
 		<EmbeddedResource Include="Resources\LVST.name"/>
 		<None Remove="Resources\DPL.name"/>
 		<EmbeddedResource Include="Resources\DPL.name"/>
+		<None Remove="Resources\ACT.name"/>
+		<EmbeddedResource Include="Resources\ACT.name"/>
 	</ItemGroup>
 
 </Project>
