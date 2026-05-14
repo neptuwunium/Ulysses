@@ -193,9 +193,10 @@ public sealed class LVSTableFile : IDisposable {
 		}
 	}
 
-	public IEnumerable<object?> GetColumn(HashId column) {
-		var columnIndex = ColumnIds.Span.IndexOf(column);
-		if (columnIndex == -1) {
+	public IEnumerable<object?> GetColumn(HashId column) => GetColumn(ColumnIds.Span.IndexOf(column));
+
+	public IEnumerable<object?> GetColumn(int columnIndex) {
+		if (columnIndex < 0 || columnIndex >= ColumnIds.Length) {
 			yield break;
 		}
 
@@ -205,4 +206,5 @@ public sealed class LVSTableFile : IDisposable {
 	}
 
 	public List<Dictionary<HashId, object?>> ToList() => GetRows().ToList();
+
 }

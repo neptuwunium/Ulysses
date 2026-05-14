@@ -10,10 +10,11 @@ using Ulysses.Json;
 
 namespace Ulysses.Struct;
 
-[TransparentStruct<uint>, EndianSwappable, DebuggerDisplay("{DebugString}"), JsonConverter(typeof(HashIdConverter))]   
+[TransparentStruct<uint>, EndianSwappable, DebuggerDisplay("{DebugString}"), JsonConverter(typeof(HashIdConverter))]
 public partial struct HashId {
 	public HashId(string name) => Value = IdRegistry.Register(name);
 	public override string ToString() => IdRegistry.Lookup.TryGetValue(Value, out var name) ? name : $"[0x{Value:x08}]";
 	public string DebugString => GetDebugString("Hash");
+	public bool HasValue => IdRegistry.Lookup.ContainsKey(Value);
 	public string GetDebugString(string prefix) => $"{IdRegistry.Lookup.GetValueOrDefault(Value, prefix)}::[0x{Value:x08}]";
 }

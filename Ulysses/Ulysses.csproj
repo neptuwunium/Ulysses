@@ -31,4 +31,8 @@ SPDX-License-Identifier: EUPL-1.2
 		<EmbeddedResource Include="Resources\ACT.name"/>
 	</ItemGroup>
 
+	<ItemGroup>
+	  <PackageReference Include="Serilog" Version="4.3.1" />
+	</ItemGroup>
+
 </Project>

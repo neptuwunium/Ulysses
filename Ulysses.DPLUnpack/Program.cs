@@ -5,13 +5,22 @@
 using System.Runtime.InteropServices;
 using Pluto.CommandLine;
 using Pluto.IO.FileSystem;
+using Serilog;
 using Ulysses;
 using Ulysses.DPLUnpack;
 using Ulysses.Struct;
 using Ulysses.Struct.FHM;
 
+Log.Logger = new LoggerConfiguration()
+			 .MinimumLevel.Debug()
+			 .WriteTo.Console()
+			 .MinimumLevel.Debug()
+			 .WriteTo.File("Ulysses.log")
+			 .CreateLogger();
+
 var flags = CommandLineFlags.Singleton<ProgramFlags>.Instance;
 
+var unknownHashes = new HashSet<uint>();
 var dplFiles = new List<(string, DPLFile)>();
 foreach (var pacPath in new FileEnumerator(flags.InputPath, "*.PAC")) {
 	var pacName = Path.GetFileNameWithoutExtension(pacPath);
@@ -34,17 +43,17 @@ foreach (var (pacName, dpl) in dplFiles) {
 		var hashStr = header.HashId.GetDebugString("DPL");
 		if (hashStr.StartsWith("DPL::[0x")) {
 			hashStr = header.HashId.ToString();
+			unknownHashes.Add(header.HashId.Value);
 		}
+
 		var path = Path.Combine(output, hashStr);
 		using var buf = dpl.ReadFile(id);
 		if (buf == null) {
-			Console.WriteLine($"{pacName}: cannot export {id}");
+			Log.Error("{PacName}: cannot export {HashId}", pacName, id);
 			continue;
 		}
 
-		Console.WriteLine($"{pacName}: {id}");
-
-		if (flags.SaveFHM) {
+		if (flags.SaveFHM && !File.Exists(path + ".fhm")) {
 			using var stream = new FileStream(path + ".fhm", FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
 			stream.Write(buf.Span);
 		}
@@ -58,16 +67,36 @@ foreach (var (pacName, dpl) in dplFiles) {
 	dpl.Dispose();
 }
 
-return;
+Log.Debug("Writing all unknown hashes...");
+using (var missingHashFile = new StreamWriter(new FileStream("DplHash.txt", FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite))) {
+	foreach (var hash in unknownHashes) {
+		missingHashFile.WriteLine(hash.ToString("x8"));
+	}
+}
 
+using (var missingHashFile = new StreamWriter(new FileStream("LvstHash.txt", FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite))) {
+	foreach (var hash in ProcessAsset.UnknownHashes) {
+		missingHashFile.WriteLine(hash.ToString("x8"));
+	}
+}
+
+Log.Debug("Writing all LVST strings...");
+using (var strings = new StreamWriter(new FileStream("LvstStr.txt", FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite))) {
+	foreach (var str in ProcessAsset.LVSTStr) {
+		strings.WriteLine(str);
+	}
+}
 void ProcessFHM(string path, FHMFile fhm) {
-	if (fhm.Count > 0) {
+	if (flags.Convert && fhm.Count > 0) {
 		using var rebuiltFile = fhm.RebuildAsset(out var ext);
 		if (rebuiltFile != null) {
 			using var stream = new FileStream(path + (ext ?? ".bin"), FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
-			Console.WriteLine(stream.Name);
+			Log.Information("Rebuilt {Name}", Path.GetRelativePath(flags.OutputPath, stream.Name));
 			stream.Write(rebuiltFile.Span);
-			return;
+
+			if (flags.OnlyConvert || flags.ConvertOrRaw) {
+				return;
+			}
 		}
 	}
 
@@ -89,10 +118,11 @@ void ProcessFHM(string path, FHMFile fhm) {
 				ext = ".bin";
 			}
 
-			Console.WriteLine(Path.GetRelativePath(flags.OutputPath, currentPath + ext));
-
 			if (flags.Convert) {
 				var didConvert = ProcessAsset.Convert(magic, buf, currentPath);
+				if (didConvert) {
+					Log.Information("Converted {Path}", Path.GetRelativePath(flags.OutputPath, currentPath));
+				}
 
 				if (flags.OnlyConvert) {
 					continue;
@@ -103,6 +133,11 @@ void ProcessFHM(string path, FHMFile fhm) {
 				}
 			}
 
+			if (File.Exists(currentPath + ext)) {
+				continue;
+			}
+
+			Log.Information("Saving {Path}", Path.GetRelativePath(flags.OutputPath, currentPath + ext));
 			using var stream = new FileStream(currentPath + ext, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
 			stream.Write(buf.Span);
 		} else {

@@ -17,4 +17,9 @@ SPDX-License-Identifier: EUPL-1.2
 		<ProjectReference Include="..\Ulysses\Ulysses.csproj"/>
 	</ItemGroup>
 
+	<ItemGroup>
+	  <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
+	  <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
+	</ItemGroup>
+
 </Project>
