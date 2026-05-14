@@ -10,12 +10,6 @@ using Charon.Hash.Basis;
 namespace Ulysses.Struct;
 
 public static class IdRegistry {
-	public static uint Hash(string name) {
-		var text = (stackalloc byte[Encoding.UTF8.GetMaxByteCount(name.Length)]);
-		var n = Encoding.UTF8.GetBytes(name, text);
-		return CRC.HashData(CRC32Variants.BZip2, text[..n]);
-	}
-
 	static IdRegistry() {
 		ParseTypeFile("Resources/DPL.name");
 		ParseTypeFile("Resources/LVST.name");
@@ -24,6 +18,12 @@ public static class IdRegistry {
 
 	public static Dictionary<uint, string> Lookup { get; } = [];
 	public static bool Freeze { get; set; }
+
+	public static uint Hash(string name) {
+		var text = (stackalloc byte[Encoding.UTF8.GetMaxByteCount(name.Length)]);
+		var n = Encoding.UTF8.GetBytes(name, text);
+		return CRC.HashData(CRC32Variants.BZip2, text[..n]);
+	}
 
 	private static void ParseTypeFile(string path) {
 		var asm = Assembly.GetExecutingAssembly();

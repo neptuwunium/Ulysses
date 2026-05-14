@@ -16,19 +16,6 @@ using Ulysses.Struct.FHM;
 namespace Ulysses;
 
 public sealed class DPLFile : IDisposable {
-	public static class Crypto {
-		static Crypto() {
-			var bytes = new byte[0x800];
-			using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("Ulysses.Resources.DPLXor.bin") ?? throw new FileNotFoundException();
-			stream.ReadExactly(bytes);
-			XorConst = bytes;
-		}
-
-		private static byte[] XorConst { get; }
-
-		public static ReadOnlySpan<byte> GetXor(int seed) => seed == 0 ? ReadOnlySpan<byte>.Empty : XorConst.AsSpan((seed & 0xff) * 8, 8);
-	}
-
 	public DPLFile(string path) {
 		File = MemoryMappedFile.CreateFromFile(path, FileMode.Open, null, 0, MemoryMappedFileAccess.Read);
 		using var reader = new MemoryMapBinaryReader(File, leaveOpen: true);
@@ -58,6 +45,17 @@ public sealed class DPLFile : IDisposable {
 	public Dictionary<uint, HashId> GroupToIdMap { get; set; }
 	public DPLHeader Header { get; }
 
+	public void Dispose() {
+		File.Dispose();
+		File = null!;
+		FHMTable.Clear();
+		ObjectPool<Dictionary<HashId, (int Offset, FHMHeader Header)>>.Return(FHMTable);
+		FHMTable = null!;
+		GroupToIdMap.Clear();
+		ObjectPool<Dictionary<uint, HashId>>.Return(GroupToIdMap);
+		GroupToIdMap = null!;
+	}
+
 	public FHMMemoryRange GetMemoryRange(HashId id, int index) {
 		if (!FHMTable.TryGetValue(id, out var info) || index >= info.Header.MemoryRangeCount) {
 			return default;
@@ -76,7 +74,7 @@ public sealed class DPLFile : IDisposable {
 
 		var xor = Crypto.GetXor(info.Header.Seed);
 
-		using var reader = new MemoryMapBinaryReader(File, info.Header.Offset, info.Header.DiskSize, leaveOpen: true);
+		using var reader = new MemoryMapBinaryReader(File, info.Header.Offset, info.Header.DiskSize, true);
 		var result = new RentedArray<byte>(info.Header.MemorySize);
 		var span = result.Memory;
 		try {
@@ -136,14 +134,16 @@ public sealed class DPLFile : IDisposable {
 		return result;
 	}
 
-	public void Dispose() {
-		File.Dispose();
-		File = null!;
-		FHMTable.Clear();
-		ObjectPool<Dictionary<HashId, (int Offset, FHMHeader Header)>>.Return(FHMTable);
-		FHMTable = null!;
-		GroupToIdMap.Clear();
-		ObjectPool<Dictionary<uint, HashId>>.Return(GroupToIdMap);
-		GroupToIdMap = null!;
+	public static class Crypto {
+		static Crypto() {
+			var bytes = new byte[0x800];
+			using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("Ulysses.Resources.DPLXor.bin") ?? throw new FileNotFoundException();
+			stream.ReadExactly(bytes);
+			XorConst = bytes;
+		}
+
+		private static byte[] XorConst { get; }
+
+		public static ReadOnlySpan<byte> GetXor(int seed) => seed == 0 ? ReadOnlySpan<byte>.Empty : XorConst.AsSpan((seed & 0xff) * 8, 8);
 	}
 }

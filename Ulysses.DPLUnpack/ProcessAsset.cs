@@ -10,7 +10,7 @@ using Ulysses.Struct;
 
 namespace Ulysses.DPLUnpack;
 
-public static partial class ProcessAsset {
+public static class ProcessAsset {
 	public static JsonSerializerOptions JsonSettings { get; } = new() {
 		WriteIndented = true,
 		NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals,

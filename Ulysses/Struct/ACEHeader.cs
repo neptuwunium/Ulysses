@@ -7,7 +7,7 @@ using Pluto.SourceGen.ReverseEndiannessGenerator;
 
 namespace Ulysses.Struct;
 
-[EndianSwappable, StructLayout(LayoutKind.Sequential, Pack = 8)]
+[EndianSwappable, StructLayout(LayoutKind.Sequential, Pack = 8)] 
 public partial record struct ACEHeader {
 	public ACEMagic Magic { get; set; }
 	public ACEDate Version { get; set; }

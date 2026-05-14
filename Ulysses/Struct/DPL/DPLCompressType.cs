@@ -7,5 +7,5 @@ namespace Ulysses.Struct.DPL;
 public enum DPLCompressType : byte {
 	Lz77,
 	Deflate,
-	None
+	None,
 }

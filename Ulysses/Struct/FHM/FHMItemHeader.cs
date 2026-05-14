@@ -7,7 +7,7 @@ using Pluto.SourceGen.ReverseEndiannessGenerator;
 
 namespace Ulysses.Struct.FHM;
 
-[EndianSwappable, StructLayout(LayoutKind.Sequential, Pack = 8)]
+[EndianSwappable, StructLayout(LayoutKind.Sequential, Pack = 8)] 
 public partial record struct FHMItemHeader {
 	public FHMItemType Type { get; set; }
 	public int Offset { get; set; }

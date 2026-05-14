@@ -100,7 +100,7 @@ public sealed class LVSTableFile : IDisposable {
 			LVSTColumnType.Date when info is { ElementCount: 1, ElementSize: 4 } => Read<ACEDate>(columnIndex, rowIndex),
 			LVSTColumnType.Time when info is { ElementCount: 1, ElementSize: 4 } => Read<ACETime>(columnIndex, rowIndex),
 			LVSTColumnType.Null => null,
-			_ => throw new NotSupportedException(info.ToString())
+			_ => throw new NotSupportedException(info.ToString()),
 		};
 	}
 
@@ -148,7 +148,7 @@ public sealed class LVSTableFile : IDisposable {
 			1 => buf.ReadString(Encoding.UTF8),
 			2 => MemoryMarshal.Cast<byte, ushort>(buf).ReadString(Encoding.Unicode),
 			4 => MemoryMarshal.Cast<byte, ushort>(buf).ReadString(Encoding.UTF32),
-			_ => throw new NotSupportedException(info.ToString())
+			_ => throw new NotSupportedException(info.ToString()),
 		};
 	}
 

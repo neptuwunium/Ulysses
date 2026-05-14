@@ -33,6 +33,7 @@ foreach (var pacPath in new FileEnumerator(flags.InputPath, "*.PAC")) {
 			Console.WriteLine($"{pacName}: cannot export {id}");
 			continue;
 		}
+
 		Console.WriteLine($"{pacName}: {id}");
 
 		if (flags.SaveFHM) {
@@ -69,6 +70,7 @@ void ProcessFHM(string path, FHMFile fhm) {
 			if (buf.Length == 0) {
 				continue;
 			}
+
 			var dir = Path.GetDirectoryName(currentPath)!;
 			Directory.CreateDirectory(dir);
 			var magic = buf.Length >= 4 ? MemoryMarshal.Read<ResourceMagic>(buf.Span) : 0;

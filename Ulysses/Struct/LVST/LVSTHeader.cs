@@ -7,7 +7,7 @@ using Pluto.SourceGen.ReverseEndiannessGenerator;
 
 namespace Ulysses.Struct.LVST;
 
-[EndianSwappable, StructLayout(LayoutKind.Sequential)]
+[EndianSwappable, StructLayout(LayoutKind.Sequential)] 
 public partial record struct LVSTHeader {
 	public uint Magic { get; set; }
 	public uint Version { get; set; }

@@ -6,27 +6,27 @@ SPDX-License-Identifier: EUPL-1.2
 
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net11.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-	  <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net11.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Neptune\Charon\Charon.csproj" />
-    <ProjectReference Include="..\Neptune\Pluto.SourceGen\Pluto.SourceGen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false"/>
-	  <ProjectReference Include="..\Neptune\Pluto\Pluto.csproj" />
-    <ProjectReference Include="..\Neptune\Triton\Triton.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\Neptune\Charon\Charon.csproj"/>
+		<ProjectReference Include="..\Neptune\Pluto.SourceGen\Pluto.SourceGen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false"/>
+		<ProjectReference Include="..\Neptune\Pluto\Pluto.csproj"/>
+		<ProjectReference Include="..\Neptune\Triton\Triton.csproj"/>
+	</ItemGroup>
 
-  <ItemGroup>
-    <None Remove="Resources\DPLXor.bin" />
-    <EmbeddedResource Include="Resources\DPLXor.bin" />
-    <None Remove="Resources\LVST.name" />
-    <EmbeddedResource Include="Resources\LVST.name" />
-    <None Remove="Resources\DPL.name" />
-    <EmbeddedResource Include="Resources\DPL.name" />
-  </ItemGroup>
+	<ItemGroup>
+		<None Remove="Resources\DPLXor.bin"/>
+		<EmbeddedResource Include="Resources\DPLXor.bin"/>
+		<None Remove="Resources\LVST.name"/>
+		<EmbeddedResource Include="Resources\LVST.name"/>
+		<None Remove="Resources\DPL.name"/>
+		<EmbeddedResource Include="Resources\DPL.name"/>
+	</ItemGroup>
 
 </Project>

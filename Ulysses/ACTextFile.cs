@@ -72,45 +72,6 @@ public sealed class ACTextFile : IDisposable {
 	public List<ACTTextRef> Texts { get; set; }
 	public Dictionary<HashId, ACTHash> Hashes { get; set; }
 
-	private string ReadStringAt<T>(Encoding encoding, int offset) where T : unmanaged {
-		if (offset == 0) {
-			return string.Empty;
-		}
-
-		var codepoints = MemoryMarshal.Cast<byte, T>(Buffer.Span[offset..]);
-		var zero = codepoints.IndexOf(default(T));
-		if (zero == 0) {
-			return string.Empty;
-		}
-
-		if (zero < 0) {
-			zero = codepoints.Length;
-		}
-
-		return encoding.GetString(MemoryMarshal.AsBytes(codepoints[..zero]));
-	}
-
-	public string? GetStringForLanguage(ACTTextRef textRef, int languageIndex) {
-		return languageIndex < Languages.Count ? ReadStringAt<ushort>(Encoding.BigEndianUnicode, textRef.Text[languageIndex]) : null;
-	}
-
-	public string? GetStringForLanguage(int textIndex, int languageIndex) {
-		if (textIndex >= Texts.Count) {
-			return null;
-		}
-
-		var text = Texts[textIndex];
-		return GetStringForLanguage(text, languageIndex);
-	}
-
-	public string? GetStringForLanguage(HashId id, string language) {
-		if (!Languages.TryGetValue(language, out var languageIndex)) {
-			return null;
-		}
-
-		return Hashes.TryGetValue(id, out var hashInfo) ? GetStringForLanguage(hashInfo.Index, languageIndex) : null;
-	}
-
 	public void Dispose() {
 		Languages.Clear();
 		ObjectPool<Dictionary<string, int>>.Return(Languages);
@@ -133,5 +94,42 @@ public sealed class ACTextFile : IDisposable {
 		}
 
 		Buffer.Dispose();
+	}
+
+	private string ReadStringAt<T>(Encoding encoding, int offset) where T : unmanaged {
+		if (offset == 0) {
+			return string.Empty;
+		}
+
+		var codepoints = MemoryMarshal.Cast<byte, T>(Buffer.Span[offset..]);
+		var zero = codepoints.IndexOf(default(T));
+		if (zero == 0) {
+			return string.Empty;
+		}
+
+		if (zero < 0) {
+			zero = codepoints.Length;
+		}
+
+		return encoding.GetString(MemoryMarshal.AsBytes(codepoints[..zero]));
+	}
+
+	public string? GetStringForLanguage(ACTTextRef textRef, int languageIndex) => languageIndex < Languages.Count ? ReadStringAt<ushort>(Encoding.BigEndianUnicode, textRef.Text[languageIndex]) : null;
+
+	public string? GetStringForLanguage(int textIndex, int languageIndex) {
+		if (textIndex >= Texts.Count) {
+			return null;
+		}
+
+		var text = Texts[textIndex];
+		return GetStringForLanguage(text, languageIndex);
+	}
+
+	public string? GetStringForLanguage(HashId id, string language) {
+		if (!Languages.TryGetValue(language, out var languageIndex)) {
+			return null;
+		}
+
+		return Hashes.TryGetValue(id, out var hashInfo) ? GetStringForLanguage(hashInfo.Index, languageIndex) : null;
 	}
 }

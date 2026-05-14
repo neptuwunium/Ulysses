@@ -6,15 +6,15 @@ SPDX-License-Identifier: EUPL-1.2
 
 <Project Sdk="Microsoft.NET.Sdk">
 
-    <PropertyGroup>
-        <OutputType>Exe</OutputType>
-        <TargetFramework>net11.0</TargetFramework>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
-    </PropertyGroup>
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<TargetFramework>net11.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
 
-    <ItemGroup>
-      <ProjectReference Include="..\Ulysses\Ulysses.csproj" />
-    </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\Ulysses\Ulysses.csproj"/>
+	</ItemGroup>
 
 </Project>

@@ -23,6 +23,22 @@ public sealed class FHMFile : IDisposable {
 	public int Offset { get; set; }
 	public IRentedArray<byte> Pool { get; set; }
 
+	public IEnumerable<FHMItemHeader> ItemHeaders {
+		get {
+			for (var i = 0; i < Count; ++i) {
+				yield return GetItemHeader(i);
+			}
+		}
+	}
+
+	public void Dispose() {
+		if (Offset != 0) {
+			return;
+		}
+
+		Pool.Dispose();
+	}
+
 	public FHMItemHeader GetItemHeader(int index) => MemoryMarshal.Read<FHMItemHeader>(Pool.Span[(Offset + 4 + index * Unsafe.SizeOf<FHMItemHeader>())..]).ReverseEndianness();
 
 	public FHMItemDataHeader GetItemDataHeader(int index) => GetItemDataHeader(GetItemHeader(index));
@@ -41,22 +57,6 @@ public sealed class FHMFile : IDisposable {
 
 	public FHMFile? GetChildItem(int index) => GetChildItem(GetItemHeader(index));
 	public FHMFile? GetChildItem(FHMItemHeader item) => item.Type != FHMItemType.Child && item.Offset > 0 ? null : new FHMFile(Pool, Offset + item.Offset, Header);
-
-	public IEnumerable<FHMItemHeader> ItemHeaders {
-		get {
-			for (var i = 0; i < Count; ++i) {
-				yield return GetItemHeader(i);
-			}
-		}
-	}
-
-	public void Dispose() {
-		if (Offset != 0) {
-			return;
-		}
-
-		Pool.Dispose();
-	}
 
 	public IRentedArray<byte>? RebuildAsset(out string? ext) {
 		ext = null;
