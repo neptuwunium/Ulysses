@@ -6,7 +6,7 @@ using Pluto.SourceGen.MagicGenerator;
 
 namespace Ulysses.Struct;
 
-[GenerateMagic(altPrint: "Ext")]
+[GenerateMagic("ResourceMagic", altPrint: "Ext")]
 [Magic("\eLua", "LuaBytecode", ".lua", false)]
 [Magic("@UTF", "CriWare", ".cpk", false)]
 [Magic("#sys", "Script", ".txt", false)]
@@ -45,4 +45,4 @@ namespace Ulysses.Struct;
 [Magic("AFS\0", "AWB", ".awb", false)]
 [Magic("FHM\x01", "FHM", ".fhm", false)]
 [Magic("DPL\x01", "DPL", ".pac", false)]
-public readonly partial record struct ResourceMagic;
+public static partial class ResourceMagicExtensions;
