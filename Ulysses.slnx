@@ -6,5 +6,6 @@
     <Project Path="Neptune/Triton/Triton.csproj" />
   </Folder>
   <Project Path="Ulysses.DPLUnpack/Ulysses.DPLUnpack.csproj" />
+  <Project Path="Ulysses.HashFinder/Ulysses.HashFinder.csproj" />
   <Project Path="Ulysses/Ulysses.csproj" />
 </Solution>

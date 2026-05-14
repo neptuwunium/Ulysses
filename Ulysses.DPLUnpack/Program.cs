@@ -5,7 +5,7 @@
 using System.Runtime.InteropServices;
 using Pluto.IO.FileSystem;
 using Ulysses;
-using Ulysses.DPL;
+using Ulysses.Struct;
 using Ulysses.Struct.FHM;
 
 if (args.Length < 2) {
@@ -28,8 +28,7 @@ foreach (var pacPath in new FileEnumerator(args[0], "*.PAC")) {
 	using var dpl = new DPLFile(pacPath);
 
 	foreach (var (id, (_, header)) in dpl.FHMTable) {
-		var path = Path.Combine(output, header.ResourceId.DebugString);
-
+		var path = Path.Combine(output, header.DPLId.DebugString);
 		using var buf = dpl.ReadFile(id);
 		if (buf == null) {
 			Console.WriteLine($"{pacName}: cannot export {id}");
@@ -44,14 +43,14 @@ foreach (var pacPath in new FileEnumerator(args[0], "*.PAC")) {
 
 		// a fhm is basically anything. textures for example are split up into several slices.
 		// need to check if fhm[0] is something we can read and then rebuild the original asset so it is easier to read
-		using var fhm = new FHMAsset(buf, 0, header);
+		using var fhm = new FHMFile(buf, 0, header);
 		ProcessFHM(path, fhm);
 	}
 }
 
 return;
 
-void ProcessFHM(string path, FHMAsset fhm) {
+void ProcessFHM(string path, FHMFile fhm) {
 	if (fhm.Count > 0) {
 		using var rebuiltFile = fhm.RebuildAsset(out var ext);
 		if (rebuiltFile != null) {

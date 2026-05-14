@@ -1,6 +1,10 @@
+// SPDX-FileCopyrightText: 2026 Neptuwunium
+//
+// SPDX-License-Identifier: EUPL-1.2
+
 using Pluto.SourceGen.MagicGenerator;
 
-namespace Ulysses;
+namespace Ulysses.Struct;
 
 [GenerateMagic(altPrint: "Ext")]
 [Magic("\eLua", "LuaBytecode", ".lua", false)]
@@ -16,13 +20,13 @@ namespace Ulysses;
 [Magic("COLH", "Collision", ".coll", false)]
 [Magic("CPM\0", "Credits", ".cpm", false)]
 [Magic("LAR ", "LAR", ".lar", false)]
-[Magic("LVST", "LoadValues", ".lvst", false)]
+[Magic("LVST", "Table", ".lvst", false)]
 [Magic("MATE", "Material", ".mat", false)]
 [Magic("MNT\0", "ModelNodeTree", ".mnt", false)]
 [Magic("MOP2", "MOP", ".mop", false)]
-[Magic("NDP3", "NuModel", ".nud", false)]
 [Magic("NFIC", "Scene", ".scene", false)]
 [Magic("NME ", "Effect", ".nme", false)]
+[Magic("NDP3", "NuModel", ".nud", false)]
 [Magic("NSP3", "NuShader", ".nus", false)]
 [Magic("NTP3", "NuTexture", ".nut", false)]
 [Magic("PCP ", "CameraPass", ".pcp", false)]

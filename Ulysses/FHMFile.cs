@@ -8,10 +8,10 @@ using System.Runtime.InteropServices;
 using Pluto.IO.Binary;
 using Ulysses.Struct.FHM;
 
-namespace Ulysses.DPL;
+namespace Ulysses;
 
-public sealed class FHMAsset : IDisposable {
-	public FHMAsset(IRentedArray<byte> pool, int offset, FHMHeader header) {
+public sealed class FHMFile : IDisposable {
+	public FHMFile(IRentedArray<byte> pool, int offset, FHMHeader header) {
 		Pool = pool;
 		Header = header;
 		Offset = offset;
@@ -39,8 +39,8 @@ public sealed class FHMAsset : IDisposable {
 	public IRentedArray<byte> GetItemData(FHMItemHeader item) => GetItemData(GetItemDataHeader(item));
 	public IRentedArray<byte> GetItemData(FHMItemDataHeader dataItem) => dataItem.Size == 0 ? RentedArray<byte>.Empty : new UnownedCovariantArray<byte>(Pool, dataItem.Offset, dataItem.Size);
 
-	public FHMAsset? GetChildItem(int index) => GetChildItem(GetItemHeader(index));
-	public FHMAsset? GetChildItem(FHMItemHeader item) => item.Type != FHMItemType.Child && item.Offset > 0 ? null : new FHMAsset(Pool, Offset + item.Offset, Header);
+	public FHMFile? GetChildItem(int index) => GetChildItem(GetItemHeader(index));
+	public FHMFile? GetChildItem(FHMItemHeader item) => item.Type != FHMItemType.Child && item.Offset > 0 ? null : new FHMFile(Pool, Offset + item.Offset, Header);
 
 	public IEnumerable<FHMItemHeader> ItemHeaders {
 		get {

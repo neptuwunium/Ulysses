@@ -3,29 +3,44 @@
 // SPDX-License-Identifier: EUPL-1.2
 
 using System.IO.MemoryMappedFiles;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Charon.Compression;
 using Pluto;
 using Pluto.IO.Binary;
+using Ulysses.Struct;
 using Ulysses.Struct.DPL;
 using Ulysses.Struct.FHM;
 
-namespace Ulysses.DPL;
+namespace Ulysses;
 
 public sealed class DPLFile : IDisposable {
+	public static class Crypto {
+		static Crypto() {
+			var bytes = new byte[0x800];
+			using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("Ulysses.Resources.DPLXor.bin") ?? throw new FileNotFoundException();
+			stream.ReadExactly(bytes);
+			XorConst = bytes;
+		}
+
+		private static byte[] XorConst { get; }
+
+		public static ReadOnlySpan<byte> GetXor(int seed) => seed == 0 ? ReadOnlySpan<byte>.Empty : XorConst.AsSpan((seed & 0xff) * 8, 8);
+	}
+
 	public DPLFile(string path) {
 		File = MemoryMappedFile.CreateFromFile(path, FileMode.Open, null, 0, MemoryMappedFileAccess.Read);
 		using var reader = new MemoryMapBinaryReader(File, leaveOpen: true);
 		Header = reader.Read<DPLHeader>().ReverseEndianness();
 
-		FHMTable = ObjectPool<Dictionary<ResourceId, (int Offset, FHMHeader Header)>>.Rent();
+		FHMTable = ObjectPool<Dictionary<DPLId, (int Offset, FHMHeader Header)>>.Rent();
 		FHMTable.Clear();
 		FHMTable.EnsureCapacity(Header.Count);
 
-		GroupToResourceIdMap = ObjectPool<Dictionary<uint, ResourceId>>.Rent();
-		GroupToResourceIdMap.Clear();
-		GroupToResourceIdMap.EnsureCapacity(Header.Count);
+		GroupToIdMap = ObjectPool<Dictionary<uint, DPLId>>.Rent();
+		GroupToIdMap.Clear();
+		GroupToIdMap.EnsureCapacity(Header.Count);
 
 		for (var i = 0; i < Header.Count; i++) {
 			var offset = reader.Position;
@@ -33,18 +48,18 @@ public sealed class DPLFile : IDisposable {
 
 			reader.Skip<FHMMemoryRange>(header.MemoryRangeCount);
 
-			FHMTable.Add(header.ResourceId, (offset, header));
-			GroupToResourceIdMap.Add(header.GroupId, header.ResourceId);
+			FHMTable.Add(header.DPLId, (offset, header));
+			GroupToIdMap.Add(header.GroupId, header.DPLId);
 		}
 	}
 
 	public MemoryMappedFile File { get; set; }
-	public Dictionary<ResourceId, (int Offset, FHMHeader Header)> FHMTable { get; set; }
-	public Dictionary<uint, ResourceId> GroupToResourceIdMap { get; set; }
+	public Dictionary<DPLId, (int Offset, FHMHeader Header)> FHMTable { get; set; }
+	public Dictionary<uint, DPLId> GroupToIdMap { get; set; }
 	public DPLHeader Header { get; }
 
-	public FHMMemoryRange GetMemoryRange(ResourceId resourceId, int index) {
-		if (!FHMTable.TryGetValue(resourceId, out var info) || index >= info.Header.MemoryRangeCount) {
+	public FHMMemoryRange GetMemoryRange(DPLId id, int index) {
+		if (!FHMTable.TryGetValue(id, out var info) || index >= info.Header.MemoryRangeCount) {
 			return default;
 		}
 
@@ -54,12 +69,12 @@ public sealed class DPLFile : IDisposable {
 		return reader.Read<FHMMemoryRange>().ReverseEndianness();
 	}
 
-	public RentedArray<byte>? ReadFile(ResourceId resourceId) {
-		if (!FHMTable.TryGetValue(resourceId, out var info) || info.Header.IsDeleted) {
+	public RentedArray<byte>? ReadFile(DPLId id) {
+		if (!FHMTable.TryGetValue(id, out var info) || info.Header.IsDeleted) {
 			return default;
 		}
 
-		var xor = DPLCrypto.GetXor(info.Header.Seed);
+		var xor = Crypto.GetXor(info.Header.Seed);
 
 		using var reader = new MemoryMapBinaryReader(File, info.Header.Offset, info.Header.DiskSize, leaveOpen: true);
 		var result = new RentedArray<byte>(info.Header.MemorySize);
@@ -125,10 +140,10 @@ public sealed class DPLFile : IDisposable {
 		File.Dispose();
 		File = null!;
 		FHMTable.Clear();
-		ObjectPool<Dictionary<ResourceId, (int Offset, FHMHeader Header)>>.Return(FHMTable);
+		ObjectPool<Dictionary<DPLId, (int Offset, FHMHeader Header)>>.Return(FHMTable);
 		FHMTable = null!;
-		GroupToResourceIdMap.Clear();
-		ObjectPool<Dictionary<uint, ResourceId>>.Return(GroupToResourceIdMap);
-		GroupToResourceIdMap = null!;
+		GroupToIdMap.Clear();
+		ObjectPool<Dictionary<uint, DPLId>>.Return(GroupToIdMap);
+		GroupToIdMap = null!;
 	}
 }

@@ -10,6 +10,6 @@ namespace Ulysses.Struct;
 [EndianSwappable, StructLayout(LayoutKind.Sequential, Pack = 8)]
 public partial record struct ACEHeader {
 	public ACEMagic Magic { get; set; }
-	public uint Version { get; set; }
+	public ACEDate Version { get; set; }
 	public uint Date { get; set; }
 }

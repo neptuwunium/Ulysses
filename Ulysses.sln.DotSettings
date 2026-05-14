@@ -2,5 +2,7 @@
 	<s:String x:Key="/Default/CodeStyle/Naming/CSharpNaming/Abbreviations/=ACE/@EntryIndexedValue">ACE</s:String>
 	<s:String x:Key="/Default/CodeStyle/Naming/CSharpNaming/Abbreviations/=DPL/@EntryIndexedValue">DPL</s:String>
 	<s:String x:Key="/Default/CodeStyle/Naming/CSharpNaming/Abbreviations/=FHM/@EntryIndexedValue">FHM</s:String>
+	<s:String x:Key="/Default/CodeStyle/Naming/CSharpNaming/Abbreviations/=LVS/@EntryIndexedValue">LVS</s:String>
+	<s:String x:Key="/Default/CodeStyle/Naming/CSharpNaming/Abbreviations/=LVST/@EntryIndexedValue">LVST</s:String>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=dimage/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=embl/@EntryIndexedValue">True</s:Boolean></wpf:ResourceDictionary>
