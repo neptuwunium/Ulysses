@@ -9,7 +9,7 @@ public enum LVSTColumnType : byte {
 	String = 0x10,
 	Float = 0x30,
 	Int = 0x40,
-	DPLId = 0x41,
+	Hash = 0x41,
 	Date = 0x91,
 	Null = 0xff,
 }

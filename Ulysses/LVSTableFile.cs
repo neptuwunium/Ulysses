@@ -7,13 +7,16 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.Json.Serialization;
 using Pluto.Extensions;
 using Pluto.IO.Binary;
+using Ulysses.Json;
 using Ulysses.Struct;
 using Ulysses.Struct.LVST;
 
 namespace Ulysses;
 
+[JsonConverter(typeof(LVSTableConverter))]
 public sealed class LVSTableFile : IDisposable {
 	public LVSTableFile(IRentedArray<byte> buffer, bool leaveOpen = false) {
 		Buffer = buffer;
@@ -24,7 +27,7 @@ public sealed class LVSTableFile : IDisposable {
 		Header = reader.Read<LVSTHeader>().ReverseEndianness();
 
 		var idByteSize = BinaryPrimitives.ReverseEndianness(reader.Read<int>());
-		ColumnIds = new UnownedCovariantArray<ResourceId>(buffer, reader.Position, idByteSize / 4);
+		ColumnIds = new UnownedCovariantArray<HashId>(buffer, reader.Position, idByteSize / 4);
 		reader.Skip<byte>(idByteSize);
 		ColumnIds.Span.ReverseEndianness();
 
@@ -49,7 +52,7 @@ public sealed class LVSTableFile : IDisposable {
 	public bool LeaveOpen { get; }
 	public LVSTHeader Header { get; }
 	public IRentedArray<byte> Buffer { get; }
-	public IRentedArray<ResourceId> ColumnIds { get; }
+	public IRentedArray<HashId> ColumnIds { get; }
 	public IRentedArray<LVSTColumnInfo> ColumnInfos { get; }
 	public IRentedArray<int> ColumnOffsets { get; }
 	public int RowCount { get; }
@@ -88,10 +91,11 @@ public sealed class LVSTableFile : IDisposable {
 
 		return info.ColumnType switch {
 			LVSTColumnType.None => throw new UnreachableException(),
+			LVSTColumnType.String when info is { ElementCount: 1, ElementSize: 1 } => Read<byte>(columnIndex, rowIndex),
 			LVSTColumnType.String => ReadString(columnIndex, rowIndex),
 			LVSTColumnType.Float when info is { ElementCount: 1, ElementSize: 4 } => Read<float>(columnIndex, rowIndex),
 			LVSTColumnType.Int when info is { ElementCount: 1, ElementSize: 4 } => Read<int>(columnIndex, rowIndex),
-			LVSTColumnType.DPLId when info is { ElementCount: 1, ElementSize: 4 } => Read<ResourceId>(columnIndex, rowIndex),
+			LVSTColumnType.Hash when info is { ElementCount: 1, ElementSize: 4 } => Read<HashId>(columnIndex, rowIndex),
 			LVSTColumnType.Date when info is { ElementCount: 1, ElementSize: 4 } => Read<ACEDate>(columnIndex, rowIndex),
 			LVSTColumnType.Null => null,
 			_ => throw new NotSupportedException(info.ToString())
@@ -146,7 +150,7 @@ public sealed class LVSTableFile : IDisposable {
 		};
 	}
 
-	public Dictionary<ResourceId, object?> GetRow(int row, Dictionary<ResourceId, object?>? cells = null) {
+	public Dictionary<HashId, object?> GetRow(int row, Dictionary<HashId, object?>? cells = null) {
 		if (cells != null) {
 			// shared object
 			cells.Clear();
@@ -162,11 +166,11 @@ public sealed class LVSTableFile : IDisposable {
 		return cells;
 	}
 
-	public IEnumerable<Dictionary<ResourceId, object?>> GetRows(Dictionary<ResourceId, object?>? cells = null) {
+	public IEnumerable<Dictionary<HashId, object?>> GetRows(Dictionary<HashId, object?>? cells = null) {
 		for (var i = 0; i < RowCount; ++i) {
 			yield return GetRow(i, cells);
 		}
 	}
 
-	public List<Dictionary<ResourceId, object?>> ToList() => GetRows().ToList();
+	public List<Dictionary<HashId, object?>> ToList() => GetRows().ToList();
 }

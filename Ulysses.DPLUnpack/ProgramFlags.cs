@@ -1,0 +1,23 @@
+using Pluto.CommandLine;
+
+namespace Ulysses.DPLUnpack;
+
+public record ProgramFlags : CommandLineFlags {
+	[Flag("input", Positional = 0, IsRequired = true)]
+	public string InputPath { get; set; } = null!;
+
+	[Flag("output", Positional = 1, IsRequired = true)]
+	public string OutputPath { get; set; } = null!;
+
+	[Flag("convert")]
+	public bool Convert { get; set; }
+
+	[Flag("only-convert")]
+	public bool OnlyConvert { get; set; }
+
+	[Flag("convert-or-raw")]
+	public bool ConvertOrRaw { get; set; }
+
+	[Flag("fhm")]
+	public bool SaveFHM { get; set; }
+}

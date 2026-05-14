@@ -34,11 +34,11 @@ public sealed class DPLFile : IDisposable {
 		using var reader = new MemoryMapBinaryReader(File, leaveOpen: true);
 		Header = reader.Read<DPLHeader>().ReverseEndianness();
 
-		FHMTable = ObjectPool<Dictionary<DPLId, (int Offset, FHMHeader Header)>>.Rent();
+		FHMTable = ObjectPool<Dictionary<HashId, (int Offset, FHMHeader Header)>>.Rent();
 		FHMTable.Clear();
 		FHMTable.EnsureCapacity(Header.Count);
 
-		GroupToIdMap = ObjectPool<Dictionary<uint, DPLId>>.Rent();
+		GroupToIdMap = ObjectPool<Dictionary<uint, HashId>>.Rent();
 		GroupToIdMap.Clear();
 		GroupToIdMap.EnsureCapacity(Header.Count);
 
@@ -48,17 +48,17 @@ public sealed class DPLFile : IDisposable {
 
 			reader.Skip<FHMMemoryRange>(header.MemoryRangeCount);
 
-			FHMTable.Add(header.DPLId, (offset, header));
-			GroupToIdMap.Add(header.GroupId, header.DPLId);
+			FHMTable.Add(header.HashId, (offset, header));
+			GroupToIdMap.Add(header.GroupId, header.HashId);
 		}
 	}
 
 	public MemoryMappedFile File { get; set; }
-	public Dictionary<DPLId, (int Offset, FHMHeader Header)> FHMTable { get; set; }
-	public Dictionary<uint, DPLId> GroupToIdMap { get; set; }
+	public Dictionary<HashId, (int Offset, FHMHeader Header)> FHMTable { get; set; }
+	public Dictionary<uint, HashId> GroupToIdMap { get; set; }
 	public DPLHeader Header { get; }
 
-	public FHMMemoryRange GetMemoryRange(DPLId id, int index) {
+	public FHMMemoryRange GetMemoryRange(HashId id, int index) {
 		if (!FHMTable.TryGetValue(id, out var info) || index >= info.Header.MemoryRangeCount) {
 			return default;
 		}
@@ -69,7 +69,7 @@ public sealed class DPLFile : IDisposable {
 		return reader.Read<FHMMemoryRange>().ReverseEndianness();
 	}
 
-	public RentedArray<byte>? ReadFile(DPLId id) {
+	public RentedArray<byte>? ReadFile(HashId id) {
 		if (!FHMTable.TryGetValue(id, out var info) || info.Header.IsDeleted) {
 			return default;
 		}
@@ -140,10 +140,10 @@ public sealed class DPLFile : IDisposable {
 		File.Dispose();
 		File = null!;
 		FHMTable.Clear();
-		ObjectPool<Dictionary<DPLId, (int Offset, FHMHeader Header)>>.Return(FHMTable);
+		ObjectPool<Dictionary<HashId, (int Offset, FHMHeader Header)>>.Return(FHMTable);
 		FHMTable = null!;
 		GroupToIdMap.Clear();
-		ObjectPool<Dictionary<uint, DPLId>>.Return(GroupToIdMap);
+		ObjectPool<Dictionary<uint, HashId>>.Return(GroupToIdMap);
 		GroupToIdMap = null!;
 	}
 }

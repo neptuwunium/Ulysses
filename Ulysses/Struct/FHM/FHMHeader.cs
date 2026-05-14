@@ -22,7 +22,7 @@ public partial record struct FHMHeader {
 	public long Offset { get; set; }
 	public int DiskSize { get; set; }
 	public uint GroupId { get; set; }
-	public DPLId DPLId { get; set; }
+	public HashId HashId { get; set; }
 	public ushort Seed { get; set; }
 	public bool IsDeleted { get; set; }
 }

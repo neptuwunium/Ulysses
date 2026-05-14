@@ -3,17 +3,23 @@
 // SPDX-License-Identifier: EUPL-1.2
 
 using System.Runtime.InteropServices;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using Pluto.CommandLine;
 using Pluto.IO.FileSystem;
 using Ulysses;
+using Ulysses.DPLUnpack;
 using Ulysses.Struct;
 using Ulysses.Struct.FHM;
 
-if (args.Length < 2) {
-	Console.WriteLine("Usage: Ulysses.DPLUnpack.exe <input> <output>");
-	return;
-}
+var flags = CommandLineFlags.Singleton<ProgramFlags>.Instance;
 
-foreach (var pacPath in new FileEnumerator(args[0], "*.PAC")) {
+var jsonSettings = new JsonSerializerOptions {
+	WriteIndented = true,
+	NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals,
+};
+
+foreach (var pacPath in new FileEnumerator(flags.InputPath, "*.PAC")) {
 	var pacName = Path.GetFileNameWithoutExtension(pacPath);
 	var pacNumber = pacName.Length > 4 ? int.Parse(pacName[4..]) : 0;
 	switch (pacNumber) {
@@ -23,12 +29,12 @@ foreach (var pacPath in new FileEnumerator(args[0], "*.PAC")) {
 			continue;
 	}
 
-	var output = Path.Combine(args[1], pacName);
+	var output = Path.Combine(flags.OutputPath, pacName);
 	Directory.CreateDirectory(output);
 	using var dpl = new DPLFile(pacPath);
 
 	foreach (var (id, (_, header)) in dpl.FHMTable) {
-		var path = Path.Combine(output, header.DPLId.DebugString);
+		var path = Path.Combine(output, header.HashId.GetDebugString("DPL"));
 		using var buf = dpl.ReadFile(id);
 		if (buf == null) {
 			Console.WriteLine($"{pacName}: cannot export {id}");
@@ -36,10 +42,10 @@ foreach (var pacPath in new FileEnumerator(args[0], "*.PAC")) {
 		}
 		Console.WriteLine($"{pacName}: {id}");
 
-		#if DEBUG
-		using var stream = new FileStream(path + ".fhm", FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
-		stream.Write(buf.Span);
-		#endif
+		if (flags.SaveFHM) {
+			using var stream = new FileStream(path + ".fhm", FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
+			stream.Write(buf.Span);
+		}
 
 		// a fhm is basically anything. textures for example are split up into several slices.
 		// need to check if fhm[0] is something we can read and then rebuild the original asset so it is easier to read
@@ -72,13 +78,40 @@ void ProcessFHM(string path, FHMFile fhm) {
 			}
 			var dir = Path.GetDirectoryName(currentPath)!;
 			Directory.CreateDirectory(dir);
-			var ext = (buf.Length >= 4 ? MemoryMarshal.Read<ResourceMagic>(buf.Span) : 0).Ext;
+			var magic = buf.Length >= 4 ? MemoryMarshal.Read<ResourceMagic>(buf.Span) : 0;
+			var ext = magic.Ext;
 			if (ext.Length == 0 || ext[0] != '.') {
 				ext = ".bin";
 			}
-			using var stream = new FileStream(currentPath + ext, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
-			Console.WriteLine(stream.Name);
-			stream.Write(buf.Span);
+
+			Console.WriteLine(Path.GetRelativePath(flags.OutputPath, currentPath + ext));
+
+			if (flags.Convert) {
+				var didConvert = true;
+				switch (magic) {
+					case ResourceMagic.Table: {
+						using var table = new LVSTableFile(buf, true);
+						using var stream = new FileStream(currentPath + ".json", FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
+						JsonSerializer.Serialize(stream, table, jsonSettings);
+						break;
+					}
+					default:
+						didConvert = false;
+						break;
+				}
+
+				if (flags.OnlyConvert) {
+					continue;
+				}
+
+				if (didConvert && flags.ConvertOrRaw) {
+					continue;
+				}
+			}
+
+			using (var stream = new FileStream(currentPath + ext, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite)) {
+				stream.Write(buf.Span);
+			}
 		} else {
 			using var child = fhm.GetChildItem(itemHeader);
 			if (child == null) {

@@ -17,19 +17,18 @@ public static class IdRegistry {
 	}
 
 	static IdRegistry() {
-		ParseTypeFile("Resources/DPL.name", DPLLookup);
-		ParseTypeFile("Resources/LVST.name", LVSTLookup);
+		ParseTypeFile("Resources/DPL.name");
+		ParseTypeFile("Resources/LVST.name");
 	}
 
-	public static Dictionary<uint, string> DPLLookup { get; } = [];
-	public static Dictionary<uint, string> LVSTLookup { get; } = [];
+	public static Dictionary<uint, string> Lookup { get; } = [];
 	public static bool Freeze { get; set; }
 
-	private static void ParseTypeFile(string path, Dictionary<uint, string> lookup) {
+	private static void ParseTypeFile(string path) {
 		var asm = Assembly.GetExecutingAssembly();
 		using var resource = asm.GetManifestResourceStream($"{asm.GetName().Name!}.{path.Replace('/', '.')}");
 		if (resource != null) {
-			ParseTypeFile(resource, lookup);
+			ParseTypeFile(resource);
 		}
 
 		if (!File.Exists(path)) {
@@ -37,10 +36,10 @@ public static class IdRegistry {
 		}
 
 		using var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-		ParseTypeFile(file, lookup);
+		ParseTypeFile(file);
 	}
 
-	public static void ParseTypeFile(Stream stream, Dictionary<uint, string> lookup) {
+	public static void ParseTypeFile(Stream stream) {
 		if (Freeze) {
 			return;
 		}
@@ -54,7 +53,17 @@ public static class IdRegistry {
 				continue;
 			}
 
-			lookup[Hash(line)] = line;
+			Lookup[Hash(line)] = line;
 		}
+	}
+
+	public static uint Register(string name) {
+		var value = Hash(name);
+
+		if (!Freeze) {
+			Lookup[value] = name;
+		}
+
+		return value;
 	}
 }
