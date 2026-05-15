@@ -137,7 +137,7 @@ public sealed class LVSTableFile : IDisposable {
 			return null;
 		}
 
-		if (rowIndex > info.RowCount) {
+		if (rowIndex >= info.RowCount) {
 			rowIndex %= info.RowCount; // maybe set it to max?
 		}
 
@@ -162,7 +162,7 @@ public sealed class LVSTableFile : IDisposable {
 			return null;
 		}
 
-		if (rowIndex > info.RowCount) {
+		if (rowIndex >= info.RowCount) {
 			rowIndex %= info.RowCount; // maybe set it to max?
 		}
 
