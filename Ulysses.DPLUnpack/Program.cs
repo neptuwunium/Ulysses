@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: EUPL-1.2
 
 using System.Runtime.InteropServices;
+using System.Text;
+using Pluto;
 using Pluto.CommandLine;
 using Pluto.IO.Binary;
 using Serilog;
@@ -79,6 +81,22 @@ void ExtractFHM(IRentedArray<byte> buf, FHMHeader header, string output) {
 	}
 
 	var path = Path.Combine(output, hashStr);
+
+	// a fhm is basically anything. textures for example are split up into several slices.
+	// need to check if fhm[0] is something we can read and then rebuild the original asset so it is easier to read
+	using var fhm = new FHMFile(buf, 0, header);
+
+	if (flags.FHMShape) {
+		var builder = ObjectPool<StringBuilder>.Rent();
+		builder.Clear();
+		builder.AppendLine($"Hash {fhm.ShapeHash():x16}");
+		fhm.DumpShape(builder);
+		using var stream = new StreamWriter(new FileStream(path + ".fhmshape", FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite));
+		stream.Write(builder.ToString());
+		builder.Clear();
+		ObjectPool<StringBuilder>.Return(builder);
+	}
+
 	if (flags.SaveFHM) {
 		using var stream = new FileStream(path + ".fhm", FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
 		stream.Write(buf.Span);
@@ -89,13 +107,10 @@ void ExtractFHM(IRentedArray<byte> buf, FHMHeader header, string output) {
 		}
 	}
 
-	// a fhm is basically anything. textures for example are split up into several slices.
-	// need to check if fhm[0] is something we can read and then rebuild the original asset so it is easier to read
-	using var fhm = new FHMFile(buf, 0, header);
-	ProcessFHM(path, fhm);
+	ProcessFHM(path, fhm, true);
 }
 
-void ProcessFHM(string path, FHMFile fhm) {
+void ProcessFHM(string path, FHMFile fhm, bool isRoot = false) {
 	if (flags.Convert && fhm.Count > 0) {
 		using var rebuiltFile = fhm.RebuildAsset(out var ext);
 		if (rebuiltFile != null) {
@@ -109,14 +124,26 @@ void ProcessFHM(string path, FHMFile fhm) {
 		}
 	}
 
+	if (isRoot && fhm.Count == 1) {
+		var header = fhm.ItemHeaders.First();
+		if (header.Type == FHMItemType.Normal) {
+			ProcessFHMItem(header, path);
+			return;
+		}
+	}
+
 	var idx = 0;
 	foreach (var itemHeader in fhm.ItemHeaders) {
-		var currentPath = Path.Combine(path, (idx++).ToString());
+		ProcessFHMItem(itemHeader, Path.Combine(path, (idx++).ToString()));
+	}
 
+	return;
+
+	void ProcessFHMItem(FHMItemHeader itemHeader, string currentPath) {
 		if (itemHeader.Type == FHMItemType.Normal) {
 			using var buf = fhm.GetItemData(itemHeader);
 			if (buf.Length == 0) {
-				continue;
+				return;
 			}
 
 			var dir = Path.GetDirectoryName(currentPath)!;
@@ -134,11 +161,11 @@ void ProcessFHM(string path, FHMFile fhm) {
 				}
 
 				if (flags.OnlyConvert) {
-					continue;
+					return;
 				}
 
 				if (didConvert && flags.ConvertOrRaw) {
-					continue;
+					return;
 				}
 			}
 
@@ -148,7 +175,7 @@ void ProcessFHM(string path, FHMFile fhm) {
 		} else {
 			using var child = fhm.GetChildItem(itemHeader);
 			if (child == null) {
-				continue;
+				return;
 			}
 
 			ProcessFHM(currentPath, child);
