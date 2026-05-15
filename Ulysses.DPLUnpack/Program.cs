@@ -4,7 +4,7 @@
 
 using System.Runtime.InteropServices;
 using Pluto.CommandLine;
-using Pluto.IO.FileSystem;
+using Pluto.IO.Binary;
 using Serilog;
 using Ulysses;
 using Ulysses.DPLUnpack;
@@ -21,71 +21,80 @@ Log.Logger = new LoggerConfiguration()
 var flags = CommandLineFlags.Singleton<ProgramFlags>.Instance;
 
 var unknownHashes = new HashSet<uint>();
-var dplFiles = new List<(string, DPLFile)>();
-foreach (var pacPath in new FileEnumerator(flags.InputPath, "*.PAC")) {
-	var pacName = Path.GetFileNameWithoutExtension(pacPath);
-	var pacNumber = pacName.Length > 4 ? int.Parse(pacName[4..]) : 0;
-	switch (pacNumber) {
-		case >= 10 and < 20: // skip audio
-		case >= 20 and < 30: // skip video
-		case 99: // skip region key
-			continue;
-	}
+using var mgr = ResourceManager.Instance;
+mgr.Mount(flags.InputPath);
+mgr.Collect();
 
-	dplFiles.Add((pacName, new DPLFile(pacPath)));
-}
+if (flags.Merged) {
+	foreach (var id in mgr.FHM.Keys) {
+		Directory.CreateDirectory(flags.OutputPath);
 
-foreach (var (pacName, dpl) in dplFiles) {
-	var output = Path.Combine(flags.OutputPath, pacName);
-	Directory.CreateDirectory(output);
-
-	foreach (var (id, (_, header)) in dpl.FHMTable) {
-		var hashStr = header.HashId.GetDebugString("DPL");
-		if (hashStr.StartsWith("DPL::[0x")) {
-			hashStr = header.HashId.ToString();
-			unknownHashes.Add(header.HashId.Value);
-		}
-
-		var path = Path.Combine(output, hashStr);
-		using var buf = dpl.ReadFile(id);
+		using var buf = mgr.ReadFile(id, out var header);
 		if (buf == null) {
-			Log.Error("{PacName}: cannot export {HashId}", pacName, id);
+			Log.Error("cannot export {HashId}", id);
 			continue;
 		}
 
-		if (flags.SaveFHM && !File.Exists(path + ".fhm")) {
-			using var stream = new FileStream(path + ".fhm", FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
-			stream.Write(buf.Span);
-		}
-
-		// a fhm is basically anything. textures for example are split up into several slices.
-		// need to check if fhm[0] is something we can read and then rebuild the original asset so it is easier to read
-		using var fhm = new FHMFile(buf, 0, header);
-		ProcessFHM(path, fhm);
+		ExtractFHM(buf, header, flags.OutputPath);
 	}
+} else {
+	foreach (var dpl in mgr.DPL.Values) {
+		var output = Path.Combine(flags.OutputPath, dpl.Name);
+		Directory.CreateDirectory(output);
 
-	dpl.Dispose();
+		foreach (var (id, (_, header)) in dpl.FHMTable) {
+			using var buf = dpl.ReadFile(id);
+			if (buf == null) {
+				Log.Error("{PacName}: cannot export {HashId}", dpl.Name, id);
+				continue;
+			}
+
+			ExtractFHM(buf, header, output);
+		}
+	}
 }
 
 Log.Debug("Writing all unknown hashes...");
-using (var missingHashFile = new StreamWriter(new FileStream("DplHash.txt", FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite))) {
+if (unknownHashes.Count > 0) {
+	using var missingHashFile = new StreamWriter(new FileStream("DplHash.txt", FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite));
 	foreach (var hash in unknownHashes) {
 		missingHashFile.WriteLine(hash.ToString("x8"));
 	}
 }
 
-using (var missingHashFile = new StreamWriter(new FileStream("LvstHash.txt", FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite))) {
+if (ProcessAsset.UnknownHashes.Count > 0) {
+	using var missingHashFile = new StreamWriter(new FileStream("LvstHash.txt", FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite));
 	foreach (var hash in ProcessAsset.UnknownHashes) {
 		missingHashFile.WriteLine(hash.ToString("x8"));
 	}
 }
 
-Log.Debug("Writing all LVST strings...");
-using (var strings = new StreamWriter(new FileStream("LvstStr.txt", FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite))) {
-	foreach (var str in ProcessAsset.LVSTStr) {
-		strings.WriteLine(str);
+return;
+
+void ExtractFHM(IRentedArray<byte> buf, FHMHeader header, string output) {
+	var hashStr = header.HashId.GetDebugString("DPL");
+	if (hashStr.StartsWith("DPL::[0x")) {
+		hashStr = header.HashId.ToString();
+		unknownHashes.Add(header.HashId.Value);
 	}
+
+	var path = Path.Combine(output, hashStr);
+	if (flags.SaveFHM) {
+		using var stream = new FileStream(path + ".fhm", FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
+		stream.Write(buf.Span);
+
+		if (flags.OnlyFHM) {
+			Log.Information("Saved {Name}", Path.GetRelativePath(flags.OutputPath, path));
+			return;
+		}
+	}
+
+	// a fhm is basically anything. textures for example are split up into several slices.
+	// need to check if fhm[0] is something we can read and then rebuild the original asset so it is easier to read
+	using var fhm = new FHMFile(buf, 0, header);
+	ProcessFHM(path, fhm);
 }
+
 void ProcessFHM(string path, FHMFile fhm) {
 	if (flags.Convert && fhm.Count > 0) {
 		using var rebuiltFile = fhm.RebuildAsset(out var ext);
@@ -131,10 +140,6 @@ void ProcessFHM(string path, FHMFile fhm) {
 				if (didConvert && flags.ConvertOrRaw) {
 					continue;
 				}
-			}
-
-			if (File.Exists(currentPath + ext)) {
-				continue;
 			}
 
 			Log.Information("Saving {Path}", Path.GetRelativePath(flags.OutputPath, currentPath + ext));

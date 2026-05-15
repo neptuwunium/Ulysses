@@ -18,7 +18,6 @@ public static class ProcessAsset {
 		Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
 	};
 
-	public static HashSet<string> LVSTStr { get; } = [];
 	public static HashSet<uint> UnknownHashes { get; } = [];
 
 	public static bool Convert(ResourceMagic magic, IRentedArray<byte> buffer, string path) {
@@ -27,9 +26,6 @@ public static class ProcessAsset {
 				using var table = new LVSTableFile(buffer, true);
 				for (var index = 0; index < table.ColumnInfos.Length; index++) {
 					var info = table.ColumnInfos[index];
-					if (info is { ColumnType: LVSTColumnType.String, ElementCount: > 1 }) {
-						LVSTStr.UnionWith(table.GetColumn(index).OfType<string?>().Where(x => x != null)!);
-					}
 
 					if (info is { ColumnType: LVSTColumnType.Hash, ElementSize: 4, ElementCount: 1 }) {
 						UnknownHashes.UnionWith(table.GetColumn(index).OfType<HashId>().Where(x => !x.HasValue).Select(x => x.Value));

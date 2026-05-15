@@ -24,4 +24,10 @@ public record ProgramFlags : CommandLineFlags {
 
 	[Flag("fhm")]
 	public bool SaveFHM { get; set; }
+
+	[Flag("only-fhm")]
+	public bool OnlyFHM { get; set; }
+
+	[Flag("merged-pac")]
+	public bool Merged { get; set; }
 }
