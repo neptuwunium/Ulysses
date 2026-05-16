@@ -7,7 +7,7 @@ using Pluto.SourceGen.ReverseEndiannessGenerator;
 
 namespace Ulysses.Struct.LVST;
 
-[EndianSwappable, StructLayout(LayoutKind.Sequential)] 
+[EndianSwappable, StructLayout(LayoutKind.Sequential)]
 public partial record struct LVSTColumnInfo {
 	public LVSTColumnType ColumnType { get; set; }
 	public byte ElementSize { get; set; }

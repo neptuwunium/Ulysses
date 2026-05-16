@@ -7,7 +7,7 @@ using Pluto.SourceGen.ReverseEndiannessGenerator;
 
 namespace Ulysses.Struct.FHM;
 
-[EndianSwappable, StructLayout(LayoutKind.Sequential, Pack = 8)] 
+[EndianSwappable, StructLayout(LayoutKind.Sequential, Pack = 8)]
 public partial record struct FHMHeader {
 	public ACEHeader ACE { get; set; }
 	public int MemoryRangeCount { get; set; }

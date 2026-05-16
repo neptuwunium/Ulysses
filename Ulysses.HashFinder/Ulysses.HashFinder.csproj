@@ -18,9 +18,9 @@ SPDX-License-Identifier: EUPL-1.2
 	</ItemGroup>
 
 	<ItemGroup>
-	  <None Update="AcId.txt">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </None>
+		<None Update="AcId.txt">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
 	</ItemGroup>
 
 </Project>

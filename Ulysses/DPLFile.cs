@@ -17,40 +17,6 @@ using Ulysses.Struct.FHM;
 namespace Ulysses;
 
 public sealed class DPLFile : IDisposable {
-	public static int GetPriority(string path) {
-		var pacName = Path.GetFileNameWithoutExtension(path);
-		if (!pacName.StartsWith("DATA")) {
-			return -1;
-		}
-
-		var chars = pacName.AsSpan(4);
-		if (!int.TryParse(chars[..2], NumberStyles.Integer, null, out var priority)) {
-			return -1;
-		}
-
-		switch (priority) {
-			case >= 10 and < 20: // skip audio
-			case >= 20 and < 30: // skip video
-				return -1;
-		}
-
-		priority *= 1000;
-		// DATAnn_nnn
-		// DATAnn_nn
-		if (chars.Length > 5 &&
-			(chars[2] == '_' && int.TryParse(chars[..2], NumberStyles.Integer, null, out var subPriority) ||
-				chars[3] == '_' && int.TryParse(chars[..3], NumberStyles.Integer, null, out subPriority))) {
-			priority += subPriority;
-		}
-
-		if (priority == 99000) {
-			// skip encrypted region data
-			return -1;
-		}
-
-		return priority;
-	}
-
 	public DPLFile(string path, int priority) {
 		Name = Path.GetFileNameWithoutExtension(path);
 		Priority = priority;
@@ -95,6 +61,40 @@ public sealed class DPLFile : IDisposable {
 		GroupToIdMap.Clear();
 		ObjectPool<Dictionary<uint, HashId>>.Return(GroupToIdMap);
 		GroupToIdMap = null!;
+	}
+
+	public static int GetPriority(string path) {
+		var pacName = Path.GetFileNameWithoutExtension(path);
+		if (!pacName.StartsWith("DATA")) {
+			return -1;
+		}
+
+		var chars = pacName.AsSpan(4);
+		if (!int.TryParse(chars[..2], NumberStyles.Integer, null, out var priority)) {
+			return -1;
+		}
+
+		switch (priority) {
+			case >= 10 and < 20: // skip audio
+			case >= 20 and < 30: // skip video
+				return -1;
+		}
+
+		priority *= 1000;
+		// DATAnn_nnn
+		// DATAnn_nn
+		if (chars.Length > 5 &&
+			((chars[2] == '_' && int.TryParse(chars[..2], NumberStyles.Integer, null, out var subPriority)) ||
+				(chars[3] == '_' && int.TryParse(chars[..3], NumberStyles.Integer, null, out subPriority)))) {
+			priority += subPriority;
+		}
+
+		if (priority == 99000) {
+			// skip encrypted region data
+			return -1;
+		}
+
+		return priority;
 	}
 
 	public FHMMemoryRange GetMemoryRange(HashId id, int index) {
@@ -198,6 +198,8 @@ public sealed class DPLFile : IDisposable {
 			}
 		}
 
+		private static byte[] XorConst { get; }
+
 		private static void Mul(Span<uint> x, uint m, int digit) {
 			if (digit <= 0) {
 				return;
@@ -298,8 +300,6 @@ public sealed class DPLFile : IDisposable {
 				sign += 1;
 			}
 		}
-
-		private static byte[] XorConst { get; }
 
 		public static ReadOnlySpan<byte> GetXor(int seed) => seed == 0 ? ReadOnlySpan<byte>.Empty : XorConst.AsSpan((seed & 0xff) * 8, 8);
 	}

@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: EUPL-1.2
 
+using System.Diagnostics.CodeAnalysis;
 using Pluto;
 using Pluto.IO.Binary;
 using Pluto.IO.FileSystem;
@@ -11,17 +12,18 @@ using Ulysses.Struct.FHM;
 namespace Ulysses;
 
 public sealed class ResourceManager : IDisposable {
+	private ResourceManager() {
+		DPL = ObjectPool<Dictionary<HashId, DPLFile>>.Rent();
+		FHM = ObjectPool<Dictionary<HashId, HashId>>.Rent();
+	}
+
+	[field: AllowNull, MaybeNull]
 	public static ResourceManager Instance {
 		get {
 			field ??= new ResourceManager();
 			return field;
 		}
 		private set;
-	}
-
-	private ResourceManager() {
-		DPL = ObjectPool<Dictionary<HashId, DPLFile>>.Rent();
-		FHM = ObjectPool<Dictionary<HashId, HashId>>.Rent();
 	}
 
 	public Dictionary<HashId, DPLFile> DPL { get; }

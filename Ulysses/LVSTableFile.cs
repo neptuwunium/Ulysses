@@ -206,5 +206,4 @@ public sealed class LVSTableFile : IDisposable {
 	}
 
 	public List<Dictionary<HashId, object?>> ToList() => GetRows().ToList();
-
 }

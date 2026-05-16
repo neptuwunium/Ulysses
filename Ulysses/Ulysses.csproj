@@ -22,11 +22,11 @@ SPDX-License-Identifier: EUPL-1.2
 
 	<ItemGroup>
 		<None Remove="Names\*.name"/>
-		<EmbeddedResource Include="Names\*.name" />
+		<EmbeddedResource Include="Names\*.name"/>
 	</ItemGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="Serilog" Version="4.3.1" />
+		<PackageReference Include="Serilog" Version="4.3.1"/>
 	</ItemGroup>
 
 </Project>
