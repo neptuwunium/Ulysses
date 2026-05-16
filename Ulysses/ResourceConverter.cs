@@ -29,7 +29,9 @@ public static class ResourceConverter {
 
 	public static Dictionary<IsValidFor, IResourceConverter> ConverterFunclets { get; } = new() {
 		[IsNuTextureAsset] = Singleton<TextureConverter>.Instance,
-		[IsUIManagerAsset] = Singleton<UITextureConverter>.Instance,
+		[IsUIImageAsset] = Singleton<UITextureConverter>.Instance,
+		[IsUITextureAsset] = Singleton<UITextureConverter>.Instance,
+		[IsUIFontAsset] = Singleton<UITextureConverter>.Instance,
 	};
 
 	public static IResourceConverter? FindConverter(FHMFile file) {
@@ -42,13 +44,31 @@ public static class ResourceConverter {
 		return null;
 	}
 
-	private static bool IsUIManagerAsset(FHMFile fhm) {
+	public static bool IsUIFontAsset(FHMFile fhm) {
+		if (fhm.Count != 2) {
+			return false;
+		}
+
+		// UIFont -> UIImage
+		using var ui = fhm.GetChildItem(1);
+		if (ui == null) {
+			return false;
+		}
+
+		return fhm.CheckMagic(0, ResourceMagic.UIFont) && IsUIImageAsset(ui);
+	}
+
+	public static bool IsUIImageAsset(FHMFile fhm) {
 		if (IdRegistry.Lookup.TryGetValue(fhm.Header.HashId, out var name) && name.StartsWith("DPL_2DIMAGE_", StringComparison.Ordinal)) {
 			return true;
 		}
 
-		if (fhm.Count != 1) {
-			return false;
+		if (fhm.Count == 1) {
+			if (fhm.GetChildItem(0) is { } nested) {
+				fhm = nested;
+			} else {
+				return false;
+			}
 		}
 
 		// UIImage -> UITexture -> NuImage[]
@@ -57,12 +77,15 @@ public static class ResourceConverter {
 			return false;
 		}
 
-		using var uiTex = ui.GetChildItem(1);
-		if (uiTex is not { Count: 2 } || !uiTex.CheckMagic(0, ResourceMagic.UITexture)) {
+		return ui.GetChildItem(1) is { } uiTex && IsUITextureAsset(uiTex);
+	}
+
+	public static bool IsUITextureAsset(FHMFile fhm) {
+		if (fhm is not { Count: 2 } || !fhm.CheckMagic(0, ResourceMagic.UITexture)) {
 			return false;
 		}
 
-		using var nuTexContainer = uiTex.GetChildItem(1);
+		using var nuTexContainer = fhm.GetChildItem(1);
 		if (nuTexContainer is not { Count: > 0 }) {
 			return false;
 		}
@@ -71,12 +94,12 @@ public static class ResourceConverter {
 		return IsNuTextureAsset(nuTex0);
 	}
 
-	private static bool IsNuTextureAsset(FHMFile? fhm) {
+	public static bool IsNuTextureAsset(FHMFile? fhm) {
 		// nu always has at least 2 elements, one for the header, second for the data.
 		if (fhm is not { Count: > 1 }) {
 			return false;
 		}
 
-		return fhm.CheckMagic(0, ResourceMagic.NuTexture) && fhm.ItemHeaders.All(header => header.Type == FHMItemType.Normal);
+		return fhm.CheckMagic(0, ResourceMagic.NuTexturePS3) && fhm.ItemHeaders.All(header => header.Type == FHMItemType.Normal);
 	}
 }
