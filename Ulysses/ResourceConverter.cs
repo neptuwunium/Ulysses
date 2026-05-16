@@ -16,12 +16,12 @@ public interface IResourceConverter {
 
 public sealed class TextureConverter : IResourceConverter {
 	public string Extension => ".png";
-	public IRentedArray<byte> Uncook(FHMFile fhm) => throw new NotImplementedException();
+	public IRentedArray<byte>? Uncook(FHMFile fhm) => null;
 }
 
 public sealed class UITextureConverter : IResourceConverter {
 	public string Extension => ".png";
-	public IRentedArray<byte> Uncook(FHMFile fhm) => throw new NotImplementedException();
+	public IRentedArray<byte>? Uncook(FHMFile fhm) => null;
 }
 
 public static class ResourceConverter {

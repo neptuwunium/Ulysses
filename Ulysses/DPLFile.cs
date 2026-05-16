@@ -2,9 +2,9 @@
 //
 // SPDX-License-Identifier: EUPL-1.2
 
+using System.Buffers.Binary;
 using System.Globalization;
 using System.IO.MemoryMappedFiles;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Charon.Compression;
@@ -113,7 +113,7 @@ public sealed class DPLFile : IDisposable {
 			return default;
 		}
 
-		var xor = Crypto.GetXor(info.Header.Seed);
+		var xor = MachinCrypto.GetXor(info.Header.Seed);
 
 		using var reader = new MemoryMapBinaryReader(File, info.Header.Offset, info.Header.DiskSize, true);
 		var result = new RentedArray<byte>(info.Header.MemorySize);
@@ -175,12 +175,128 @@ public sealed class DPLFile : IDisposable {
 		return result;
 	}
 
-	public static class Crypto {
-		static Crypto() {
-			var bytes = new byte[0x800];
-			using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("Ulysses.Resources.DPLXor.bin") ?? throw new FileNotFoundException();
-			stream.ReadExactly(bytes);
-			XorConst = bytes;
+	public static class MachinCrypto {
+		static MachinCrypto() {
+			XorConst = new byte[0x800];
+
+			var x = (stackalloc uint[0x209]);
+			var y = (stackalloc uint[0x20D]);
+
+			// calculate Pi via Machin's formula up to 515 bytes.
+			// https://en.wikipedia.org/wiki/Machin-like_formula
+			const int DIGITS = 0x203;
+			Arctan(x, 5, 4, DIGITS);
+			Arctan(y, 239, 1, DIGITS);
+			Sub(x, y, DIGITS);
+			Mul(x, 4, DIGITS);
+
+			var xor = XorConst.AsSpan();
+			for (var index = 0; index < 0x100; index++) {
+				var piIndex = (((index & 0xFF) << 4) + 0x10) >> 3;
+				BinaryPrimitives.WriteUInt32BigEndian(xor[(index * 8)..], x[piIndex]);
+				BinaryPrimitives.WriteUInt32BigEndian(xor[(index * 8 + 4)..], x[piIndex + 1]);
+			}
+		}
+
+		private static void Mul(Span<uint> x, uint m, int digit) {
+			if (digit <= 0) {
+				return;
+			}
+
+			var carry = 0u;
+			for (var i = digit - 1; i >= 0; i--) {
+				var result = (ulong) x[i] * m + carry;
+				x[i] = (uint) (result & 0xFFFFFFFF);
+				carry = (uint) (result >> 32);
+			}
+		}
+
+		private static void Div(Span<uint> x, uint d, int digit) {
+			if (digit <= 0) {
+				return;
+			}
+
+			var remainder = 0u;
+			for (var i = 0; i < digit; i++) {
+				var current = ((ulong) remainder << 32) + x[i];
+				x[i] = (uint) (current / d);
+				remainder = (uint) (current % d);
+			}
+		}
+
+		private static void Add(Span<uint> x, Span<uint> y, int digit) {
+			if (digit <= 0) {
+				return;
+			}
+
+			var carry = 0u;
+			for (var i = digit - 1; i >= 0; i--) {
+				var total = (ulong) x[i] + y[i] + carry;
+				x[i] = (uint) (total & 0xFFFFFFFF);
+				carry = (uint) (total >> 32);
+			}
+		}
+
+		private static void Sub(Span<uint> x, Span<uint> y, int digit) {
+			if (digit <= 0) {
+				return;
+			}
+
+			var borrow = 0;
+			for (var i = digit - 1; i >= 0; i--) {
+				var diff = (long) x[i] - y[i] - borrow;
+				if (diff < 0) {
+					diff += 0x100000000L;
+					borrow = 1;
+				} else {
+					borrow = 0;
+				}
+
+				x[i] = (uint) (diff & 0xFFFFFFFF);
+			}
+		}
+
+		private static void Arctan(Span<uint> x, uint r, uint m, int digit) {
+			var y = (stackalloc uint[0x20D]);
+			y[0] = m;
+
+			Div(y, r, digit);
+			y[..digit].CopyTo(x);
+
+			var rSquared = r * r;
+			var divisor = 3u;
+			var sign = 1;
+
+			var temp = (stackalloc uint[digit]);
+			while (true) {
+				Div(y, rSquared, digit);
+
+				y[..digit].CopyTo(temp);
+				Div(temp, divisor, digit);
+
+				var allZero = true;
+				for (var i = 0; i < digit; i++) {
+					if (temp[i] == 0) {
+						continue;
+					}
+
+					allZero = false;
+					break;
+				}
+
+				if (allZero) {
+					break;
+				}
+
+				if ((sign & 1) != 0) {
+					Sub(x, temp, digit);
+				} else {
+					Add(x, temp, digit);
+				}
+
+				divisor += 2;
+				sign += 1;
+			}
 		}
 
 		private static byte[] XorConst { get; }

@@ -11,9 +11,9 @@ namespace Ulysses.Struct;
 
 public static class IdRegistry {
 	static IdRegistry() {
-		ParseTypeFile("Resources/DPL.name");
-		ParseTypeFile("Resources/LVST.name");
-		ParseTypeFile("Resources/ACT.name");
+		ParseTypeFile("Names/DPL.name");
+		ParseTypeFile("Names/LVST.name");
+		ParseTypeFile("Names/ACT.name");
 	}
 
 	public static Dictionary<uint, string> Lookup { get; } = [];

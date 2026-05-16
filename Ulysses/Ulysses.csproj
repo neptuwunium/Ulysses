@@ -21,14 +21,8 @@ SPDX-License-Identifier: EUPL-1.2
 	</ItemGroup>
 
 	<ItemGroup>
-		<None Remove="Resources\DPLXor.bin"/>
-		<EmbeddedResource Include="Resources\DPLXor.bin"/>
-		<None Remove="Resources\LVST.name"/>
-		<EmbeddedResource Include="Resources\LVST.name"/>
-		<None Remove="Resources\DPL.name"/>
-		<EmbeddedResource Include="Resources\DPL.name"/>
-		<None Remove="Resources\ACT.name"/>
-		<EmbeddedResource Include="Resources\ACT.name"/>
+		<None Remove="Names\*.name"/>
+		<EmbeddedResource Include="Names\*.name" />
 	</ItemGroup>
 
 	<ItemGroup>
