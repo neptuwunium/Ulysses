@@ -10,18 +10,19 @@ using Ulysses.Struct.FHM;
 namespace Ulysses;
 
 public interface IResourceConverter {
-	string Extension { get; }
-	IRentedArray<byte>? Uncook(FHMFile fhm);
+	IEnumerable<RebuiltAsset>? Uncook(FHMFile fhm);
+}
+
+public readonly record struct RebuiltAsset(IRentedArray<byte> Buffer, string Extension) : IDisposable {
+	public void Dispose() => Buffer.Dispose();
 }
 
 public sealed class TextureConverter : IResourceConverter {
-	public string Extension => ".png";
-	public IRentedArray<byte>? Uncook(FHMFile fhm) => null;
+	public IEnumerable<RebuiltAsset>? Uncook(FHMFile fhm) => null;
 }
 
 public sealed class UITextureConverter : IResourceConverter {
-	public string Extension => ".png";
-	public IRentedArray<byte>? Uncook(FHMFile fhm) => null;
+	public IEnumerable<RebuiltAsset>? Uncook(FHMFile fhm) => null;
 }
 
 public static class ResourceConverter {

@@ -97,15 +97,7 @@ public sealed class FHMFile : IDisposable {
 	public FHMFile? GetChildItem(int index) => GetChildItem(GetItemHeader(index));
 	public FHMFile? GetChildItem(FHMItemHeader item) => item.Type != FHMItemType.Child && item.Offset > 0 ? null : new FHMFile(Buffer, Offset + item.Offset, Header);
 
-	public IRentedArray<byte>? RebuildAsset(out string? ext) {
-		if (ResourceConverter.FindConverter(this) is not { } converter) {
-			ext = null;
-			return null;
-		}
-
-		ext = converter.Extension;
-		return converter.Uncook(this);
-	}
+	public IEnumerable<RebuiltAsset>? RebuildAsset() => ResourceConverter.FindConverter(this)?.Uncook(this);
 
 	public ulong ShapeHash() {
 		using var crc = CRC.Create(CRC64Variants.Default);

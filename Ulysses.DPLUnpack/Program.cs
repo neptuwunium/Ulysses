@@ -112,11 +112,27 @@ void ExtractFHM(IRentedArray<byte> buf, FHMHeader header, string output) {
 
 void ProcessFHM(string path, FHMFile fhm, bool isRoot = false) {
 	if (flags.Convert && fhm.Count > 0) {
-		using var rebuiltFile = fhm.RebuildAsset(out var ext);
-		if (rebuiltFile != null) {
-			using var stream = new FileStream(path + (ext ?? ".bin"), FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
-			Log.Information("Rebuilt {Name}", Path.GetRelativePath(flags.OutputPath, stream.Name));
-			stream.Write(rebuiltFile.Span);
+		var rebuiltFiles = fhm.RebuildAsset();
+		if (rebuiltFiles != null) {
+			var first = true;
+			var rebuiltIdx = 0;
+			foreach (var rebuiltFile in rebuiltFiles) {
+				try {
+					var filePath = path;
+					if (!first) {
+						filePath += $".{++rebuiltIdx}";
+					}
+
+					filePath += rebuiltFile.Extension;
+					first = false;
+
+					using var stream = new FileStream(filePath, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
+					Log.Information("Rebuilt {Name}", Path.GetRelativePath(flags.OutputPath, stream.Name));
+					stream.Write(rebuiltFile.Buffer.Span);
+				} finally {
+					rebuiltFile.Dispose();
+				}
+			}
 
 			if (flags.OnlyConvert || flags.ConvertOrRaw) {
 				return;
