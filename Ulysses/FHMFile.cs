@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: EUPL-1.2
 
 using System.Buffers.Binary;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -16,17 +17,17 @@ using Ulysses.Struct.FHM;
 namespace Ulysses;
 
 public sealed class FHMFile : IDisposable {
-	public FHMFile(IRentedArray<byte> pool, int offset, FHMHeader header) {
-		Pool = pool;
+	public FHMFile(IRentedArray<byte> buffer, int offset, FHMHeader header) {
+		Buffer = buffer;
 		Header = header;
 		Offset = offset;
-		Count = BinaryPrimitives.ReadInt32BigEndian(pool.Span[offset..]);
+		Count = BinaryPrimitives.ReadInt32BigEndian(buffer.Span[offset..]);
 	}
 
 	public FHMHeader Header { get; }
 	public int Count { get; }
 	public int Offset { get; set; }
-	public IRentedArray<byte> Pool { get; set; }
+	public IRentedArray<byte> Buffer { get; set; }
 
 	public IEnumerable<FHMItemHeader> ItemHeaders {
 		get {
@@ -41,10 +42,10 @@ public sealed class FHMFile : IDisposable {
 			return;
 		}
 
-		Pool.Dispose();
+		Buffer.Dispose();
 	}
 
-	public FHMItemHeader GetItemHeader(int index) => MemoryMarshal.Read<FHMItemHeader>(Pool.Span[(Offset + 4 + index * Unsafe.SizeOf<FHMItemHeader>())..]).ReverseEndianness();
+	public FHMItemHeader GetItemHeader(int index) => MemoryMarshal.Read<FHMItemHeader>(Buffer.Span[(Offset + 4 + index * Unsafe.SizeOf<FHMItemHeader>())..]).ReverseEndianness();
 
 	public FHMItemDataHeader GetItemDataHeader(int index) => GetItemDataHeader(GetItemHeader(index));
 
@@ -53,15 +54,48 @@ public sealed class FHMFile : IDisposable {
 			return default;
 		}
 
-		return MemoryMarshal.Read<FHMItemDataHeader>(Pool.Span[(Offset + item.Offset)..]).ReverseEndianness();
+		return MemoryMarshal.Read<FHMItemDataHeader>(Buffer.Span[(Offset + item.Offset)..]).ReverseEndianness();
+	}
+
+	public IRentedArray<byte>? GetFullBuffer() {
+		if (Count == 0) {
+			return RentedArray<byte>.Empty;
+		}
+
+		var offset = -1;
+		var size = 0;
+		foreach (var item in ItemHeaders) {
+			if (item.Type != FHMItemType.Normal) {
+				return null;
+			}
+
+			var header = GetItemDataHeader(item);
+			if (offset == -1) {
+				offset = header.Offset;
+			}
+
+			Debug.Assert(offset + size == header.Offset);
+
+			if (offset > header.Offset) {
+				return null;
+			}
+
+			size += header.Size;
+		}
+
+		if (size == 0 || offset == -1) {
+			return null;
+		}
+
+		return new UnownedRentedArray<byte>(Buffer, offset, size);
 	}
 
 	public IRentedArray<byte> GetItemData(int index) => GetItemData(GetItemDataHeader(index));
 	public IRentedArray<byte> GetItemData(FHMItemHeader item) => GetItemData(GetItemDataHeader(item));
-	public IRentedArray<byte> GetItemData(FHMItemDataHeader dataItem) => dataItem.Size == 0 ? RentedArray<byte>.Empty : new UnownedCovariantArray<byte>(Pool, dataItem.Offset, dataItem.Size);
+	public IRentedArray<byte> GetItemData(FHMItemDataHeader dataItem) => dataItem.Size == 0 ? RentedArray<byte>.Empty : new UnownedCovariantArray<byte>(Buffer, dataItem.Offset, dataItem.Size);
 
 	public FHMFile? GetChildItem(int index) => GetChildItem(GetItemHeader(index));
-	public FHMFile? GetChildItem(FHMItemHeader item) => item.Type != FHMItemType.Child && item.Offset > 0 ? null : new FHMFile(Pool, Offset + item.Offset, Header);
+	public FHMFile? GetChildItem(FHMItemHeader item) => item.Type != FHMItemType.Child && item.Offset > 0 ? null : new FHMFile(Buffer, Offset + item.Offset, Header);
 
 	public IRentedArray<byte>? RebuildAsset(out string? ext) {
 		if (ResourceConverter.FindConverter(this) is not { } converter) {

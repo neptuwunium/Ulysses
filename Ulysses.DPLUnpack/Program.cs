@@ -132,6 +132,21 @@ void ProcessFHM(string path, FHMFile fhm, bool isRoot = false) {
 		}
 	}
 
+	if (!isRoot && flags.SaveFHMBuffer) {
+		using var fhmBuf = fhm.GetFullBuffer();
+		if (fhmBuf != null) {
+			var magic = fhmBuf.Length >= 4 ? MemoryMarshal.Read<ResourceMagic>(fhmBuf.Span) : 0;
+			var ext = magic.Ext;
+			if (ext.Length == 0 || ext[0] != '.') {
+				ext = ".bin";
+			}
+			var dir = Path.GetDirectoryName(path)!;
+			Directory.CreateDirectory(dir);
+			using var stream = new FileStream(path + ext, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
+			stream.Write(fhmBuf.Span);
+		}
+	}
+
 	var idx = 0;
 	foreach (var itemHeader in fhm.ItemHeaders) {
 		ProcessFHMItem(itemHeader, Path.Combine(path, (idx++).ToString()));
