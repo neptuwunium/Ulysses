@@ -74,7 +74,7 @@ void ExtractFHM(IRentedArray<byte> buf, FHMHeader header, string output) {
 		var builder = ObjectPool<StringBuilder>.Rent();
 		builder.Clear();
 		builder.AppendLine($"Hash {fhm.ShapeHash():x16}");
-		fhm.DumpShape(builder);
+		fhm.DumpShape(builder, 0);
 		using var stream = new StreamWriter(new FileStream(path + ".fhmshape", FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite));
 		stream.Write(builder.ToString());
 		builder.Clear();
@@ -122,16 +122,21 @@ void ProcessFHM(FHMFile fhm, string path, string name, bool isRoot) {
 
 	var idx = 0;
 	foreach (var itemHeader in fhm.ItemHeaders) {
-		ProcessFHMItem(fhm, itemHeader, path, name, idx++);
+		if (ProcessFHMItem(fhm, itemHeader, path, name, idx++)) {
+			break;
+		}
 	}
 }
 
-void ProcessFHMItem(FHMFile fhm, FHMItemHeader itemHeader, string path, string name, int index) {
+bool ProcessFHMItem(FHMFile fhm, FHMItemHeader itemHeader, string path, string name, int itemIndex) {
 	if (flags.Convert) {
-		using var resource = Resource.Construct(fhm, name, itemHeader, true);
+		using var resource = Resource.Construct(fhm, itemHeader, itemIndex, name, true);
+
 		if (resource is not null && resource.ResourceCount > 0) {
+			var didConvert = true;
+
 			for (var resourceIndex = 0; resourceIndex < resource.ResourceCount; ++resourceIndex) {
-				var resourceName = resource.GetResourceName(resourceIndex, resource.IsFullyUtilized || resource.ResourceCount == 1 ? string.Empty : $"/{resourceIndex}");
+				var resourceName = resource.GetResourceName(resourceIndex, resource.ResourceCount == 1 ? string.Empty : $"/{resourceIndex}/");
 				if (resourceName == null) {
 					continue;
 				}
@@ -142,25 +147,33 @@ void ProcessFHMItem(FHMFile fhm, FHMItemHeader itemHeader, string path, string n
 
 				Log.Information("Saving {Path}", resourceName);
 				using var stream = new FileStream(resourcePath, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
-				resource.UncookToStream(stream, resourceIndex);
+				if (!resource.Save(stream, resourceIndex)) {
+					File.Delete(resourcePath);
+					didConvert = false;
+					break;
+				}
 			}
 
-			if (flags.ConvertOrRaw) {
-				return;
+			if (flags.ConvertOrRaw && didConvert) {
+				return resource.IsFullyUtilized;
 			}
+		}
+
+		if (flags.OnlyConvert) {
+			return resource?.IsFullyUtilized == true;
 		}
 	}
 
 	if (flags.OnlyConvert) {
-		return;
+		return false;
 	}
 
-	name = $"{name}/{index}";
+	name = $"{name}/{itemIndex}";
 
 	if (itemHeader.Type == FHMItemType.Normal) {
 		using var buf = fhm.GetItemData(itemHeader);
 		if (buf.Length == 0) {
-			return;
+			return false;
 		}
 
 		path = Path.Combine(path, name);
@@ -178,9 +191,11 @@ void ProcessFHMItem(FHMFile fhm, FHMItemHeader itemHeader, string path, string n
 	} else {
 		using var child = fhm.GetChildItem(itemHeader);
 		if (child == null) {
-			return;
+			return false;
 		}
 
 		ProcessFHM(child, path, name, false);
 	}
+
+	return false;
 }

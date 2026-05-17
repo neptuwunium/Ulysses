@@ -56,9 +56,9 @@ public sealed class FHMFile : IDisposable {
 		return -1;
 	}
 
-	public FHMItemHeader GetItemHeader(int index) => MemoryMarshal.Read<FHMItemHeader>(Buffer.Span[(Offset + 4 + index * Unsafe.SizeOf<FHMItemHeader>())..]).ReverseEndianness();
+	public FHMItemHeader GetItemHeader(int index) => index >= Count ? default : MemoryMarshal.Read<FHMItemHeader>(Buffer.Span[(Offset + 4 + index * Unsafe.SizeOf<FHMItemHeader>())..]).ReverseEndianness();
 
-	public FHMItemDataHeader GetItemDataHeader(int index) => GetItemDataHeader(GetItemHeader(index));
+	public FHMItemDataHeader GetItemDataHeader(int index) => index >= Count ? default : GetItemDataHeader(GetItemHeader(index));
 
 	public FHMItemDataHeader GetItemDataHeader(FHMItemHeader item) {
 		if (item.Type != FHMItemType.Normal) {
@@ -101,11 +101,11 @@ public sealed class FHMFile : IDisposable {
 		return new UnownedRentedArray<byte>(Buffer, offset, size);
 	}
 
-	public IRentedArray<byte> GetItemData(int index) => GetItemData(GetItemDataHeader(index));
+	public IRentedArray<byte> GetItemData(int index) => index >= Count ? RentedArray<byte>.Empty : GetItemData(GetItemDataHeader(index));
 	public IRentedArray<byte> GetItemData(FHMItemHeader item) => GetItemData(GetItemDataHeader(item));
-	public IRentedArray<byte> GetItemData(FHMItemDataHeader dataItem) => dataItem.Size == 0 ? RentedArray<byte>.Empty : new UnownedCovariantArray<byte>(Buffer, dataItem.Offset, dataItem.Size);
+	public IRentedArray<byte> GetItemData(FHMItemDataHeader dataItem) => dataItem.Size == 0 ? RentedArray<byte>.Empty : new UnownedRentedArray<byte>(Buffer, dataItem.Offset, dataItem.Size);
 
-	public FHMFile? GetChildItem(int index) => GetChildItem(GetItemHeader(index));
+	public FHMFile? GetChildItem(int index) => index >= Count ? null : GetChildItem(GetItemHeader(index));
 	public FHMFile? GetChildItem(FHMItemHeader item) => item.Type != FHMItemType.Child && item.Offset > 0 ? null : new FHMFile(Buffer, Offset + item.Offset, Header);
 
 	public ulong ShapeHash() {
@@ -136,18 +136,19 @@ public sealed class FHMFile : IDisposable {
 		}
 	}
 
-	public void DumpShape(StringBuilder builder, string indent = "") {
-		builder.AppendLine($"{indent}FHM\t{Count}");
+	public void DumpShape(StringBuilder builder, int fhmIndex, string indent = "") {
+		builder.AppendLine($"{indent}FHM\t{fhmIndex:x4}\t{Count:x4}");
+		var index = 0;
 		foreach (var item in ItemHeaders) {
 			if (item.Type == FHMItemType.Normal) {
 				using var header = GetItemData(item);
-				builder.AppendLine($"{indent}\t{(header.Length >= 4 ? MemoryMarshal.Read<ResourceMagic>(header.Span).ToString() : "NULL")}");
+				builder.AppendLine($"{indent}\t{(header.Length >= 4 ? MemoryMarshal.Read<ResourceMagic>(header.Span).ToString() : "NULL")}\t{index++:x4}\t{header.Length:x8}");
 			} else {
 				using var child = GetChildItem(item);
 				if (child == null) {
-					builder.AppendLine($"{indent}\tFHM 0");
+					builder.AppendLine($"{indent}\tFHM\t{index++:x4}\t0000");
 				} else {
-					child.DumpShape(builder, indent + "\t");
+					child.DumpShape(builder, index++, indent + "\t");
 				}
 			}
 		}

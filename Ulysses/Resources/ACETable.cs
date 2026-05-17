@@ -8,20 +8,20 @@ using Ulysses.Struct.FHM;
 
 namespace Ulysses.Resources;
 
-public class ACEText : Resource {
-	public ACEText(FHMFile fhm, FHMItemHeader item, string name, bool leaveOpen = false) : base(fhm, name, leaveOpen) {
+public class ACETable : Resource {
+	public ACETable(FHMFile fhm, FHMItemHeader item, string name, bool leaveOpen = false) : base(fhm, name, leaveOpen) {
 		if (fhm.GetItemData(item) is not { Length: > 0 } data) {
 			return;
 		}
 
-		Data = new ACETextData(data);
+		Data = new ACETableData(data);
 		IsFullyUtilized = fhm.Count == 1;
 	}
 
-	public ACETextData? Data { get; private set; }
+	public ACETableData? Data { get; private set; }
 	public override int ResourceCount => Data != null ? 1 : 0;
 
-	public override string? GetResourceName(int resourceIndex, string prefix) => Data != null ? Name + prefix + ".json" : null;
+	public override string? GetResourceName(int resourceIndex, string prefix) => Data != null ? prefix + Name + ".json" : null;
 
 	public override bool Save(Stream stream, int resourceIndex) {
 		if (Data == null) {

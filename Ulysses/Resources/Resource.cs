@@ -18,6 +18,7 @@ public abstract class Resource : IDisposable {
 		FHM = fhm;
 		Name = name;
 		LeaveOpen = leaveOpen;
+		ResourceCount = 0;
 	}
 
 	public static JsonSerializerOptions JsonSettings { get; } = new() {
@@ -29,7 +30,7 @@ public abstract class Resource : IDisposable {
 	public FHMFile FHM { get; private set; }
 	public string Name { get; private set; }
 	public bool LeaveOpen { get; }
-	public int ResourceCount { get; protected set; }
+	public virtual int ResourceCount { get; }
 	public bool IsFullyUtilized { get; protected set; }
 
 	public void Dispose() {
@@ -38,10 +39,8 @@ public abstract class Resource : IDisposable {
 	}
 
 	~Resource() => Dispose(false);
-	public abstract IEnumerable<RebuiltAsset>? Uncook();
-	public abstract RebuiltAsset? Uncook(int resourceIndex);
 	public abstract string? GetResourceName(int resourceIndex, string prefix);
-	public abstract bool UncookToStream(Stream stream, int resourceIndex);
+	public abstract bool Save(Stream stream, int resourceIndex);
 
 	protected virtual void Dispose(bool disposing) {
 		if (!disposing) {
@@ -56,22 +55,22 @@ public abstract class Resource : IDisposable {
 		FHM = null!;
 	}
 
-	public static Resource? Construct(FHMFile fhm, string name, FHMItemHeader item, bool leaveOpen = false) {
-		if (TryConstructViaShape(fhm, name, item, out var instance, leaveOpen) ||
-			TryConstructViaMagic(fhm, name, item, out instance, leaveOpen)) {
+	public static Resource? Construct(FHMFile fhm, FHMItemHeader fhmItem, int fhmIndex, string name, bool leaveOpen = false) {
+		if (TryConstructViaShape(fhm, fhmItem, fhmIndex, name, out var instance, leaveOpen) ||
+			TryConstructViaMagic(fhm, fhmItem, fhmIndex, name, out instance, leaveOpen)) {
 			return instance;
 		}
 
 		return null;
 	}
 
-	public static bool TryConstructViaShape(FHMFile fhm, string name, FHMItemHeader item, [MaybeNullWhen(false)] out Resource instance, bool leaveOpen = false) {
+	public static bool TryConstructViaShape(FHMFile fhm, FHMItemHeader fhmItem, int fhmIndex, string name, [MaybeNullWhen(false)] out Resource instance, bool leaveOpen = false) {
 		instance = null;
 		return false;
 	}
 
-	public static bool TryConstructViaMagic(FHMFile fhm, string name, FHMItemHeader item, [MaybeNullWhen(false)] out Resource instance, bool leaveOpen = false) {
-		using var buf = fhm.GetItemData(item);
+	public static bool TryConstructViaMagic(FHMFile fhm, FHMItemHeader fhmItem, int fhmIndex, string name, [MaybeNullWhen(false)] out Resource instance, bool leaveOpen = false) {
+		using var buf = fhm.GetItemData(fhmItem);
 		instance = null;
 
 		if (buf.Length < 4) {
@@ -82,23 +81,23 @@ public abstract class Resource : IDisposable {
 
 		// ReSharper disable once SwitchStatementMissingSomeEnumCasesNoDefault
 		switch (magic) {
-			case ResourceMagic.NuTexturePS3:
-				instance = new NuTexture(fhm, name, item, leaveOpen);
+			case ResourceMagic.NuTexturePS3 when fhmIndex == 0:
+				instance = new NuTexture(fhm, fhmItem, 0, name, leaveOpen);
 				return true;
-			case ResourceMagic.UITexture:
-				instance = new UITexture(fhm, name, item, leaveOpen);
-				return true;
+			// case ResourceMagic.UITexture:
+			//	instance = new UITexture(fhm, fhmItem, name, leaveOpen);
+			// 	return true;
 			case ResourceMagic.UIImage:
-				instance = new UI2DImage(fhm, name, item, leaveOpen);
+				instance = new UI2DImage(fhm, fhmItem, name, leaveOpen);
 				return true;
 			case ResourceMagic.UIFont:
-				instance = new UIFont(fhm, name, item, leaveOpen);
+				instance = new UIFont(fhm, fhmItem, name, leaveOpen);
 				return true;
 			case ResourceMagic.ACEText:
-				instance = new ACEText(fhm, name, item, leaveOpen);
+				instance = new ACEText(fhm, fhmItem, name, leaveOpen);
 				return true;
 			case ResourceMagic.ACETable:
-				instance = new ACETable(fhm, name, item, leaveOpen);
+				instance = new ACETable(fhm, fhmItem, name, leaveOpen);
 				return true;
 		}
 
