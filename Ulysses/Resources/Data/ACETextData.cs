@@ -17,6 +17,13 @@ namespace Ulysses.Resources.Data;
 
 [JsonConverter(typeof(ACTextConverter))]
 public sealed class ACETextData : IDisposable {
+	static ACETextData() {
+		Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+		ShiftJIS = Encoding.GetEncoding(932);
+	}
+
+	private static Encoding ShiftJIS { get; }
+
 	public ACETextData(IRentedArray<byte> buffer, bool leaveOpen = false) {
 		Buffer = buffer;
 		LeaveOpen = leaveOpen;
@@ -52,7 +59,7 @@ public sealed class ACETextData : IDisposable {
 			var labelOffset = BinaryPrimitives.ReverseEndianness(reader.Read<int>());
 			var offsets = reader.ReadShared<int>(Header.LanguageCount);
 			offsets.Span.ReverseEndianness();
-			Texts.Add(new ACTTextRef(ReadStringAt<byte>(Encoding.UTF8, labelOffset), offsets));
+			Texts.Add(new ACTTextRef(ReadStringAt<byte>(ShiftJIS, labelOffset), offsets));
 		}
 
 		reader.Position = Header.HashTableOffset;
@@ -60,7 +67,7 @@ public sealed class ACETextData : IDisposable {
 		var hashMetaSp = hashMeta.Span;
 		hashMetaSp.ReverseEndianness();
 		foreach (var meta in hashMetaSp) {
-			var v = Hashes[meta.Hash] = new ACTHash(meta.Index, ReadStringAt<byte>(Encoding.UTF8, meta.Offset));
+			var v = Hashes[meta.Hash] = new ACTHash(meta.Index, ReadStringAt<byte>(ShiftJIS, meta.Offset));
 			IdRegistry.Register(meta.Hash, v.Label);
 		}
 	}

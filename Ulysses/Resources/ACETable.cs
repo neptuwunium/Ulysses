@@ -21,7 +21,7 @@ public class ACETable : Resource {
 	public ACETableData? Data { get; private set; }
 	public override int ResourceCount => Data != null ? 1 : 0;
 
-	public override string? GetResourceName(int resourceIndex, string prefix) => Data != null ? prefix + Name + ".json" : null;
+	public override string? GetResourceName(int resourceIndex, string prefix) => Data != null ? Name + prefix + ".json" : null;
 
 	public override bool Save(Stream stream, int resourceIndex) {
 		if (Data == null) {

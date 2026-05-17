@@ -40,8 +40,8 @@ public class NuTexture : Resource {
 
 		// 3 types
 		// 1: "normal" nu file where the data and streams are in the same file
-		// 2: "fast load" fhm file, where the headers are copied to 0, and the normal nu file is in [1]
-		// 3: split virtual fhm file, where only the nut header is in [0], surface headers are in [1..surfaceCount] and data is in [surfaceCount..]
+		// 2: "fast load" fhm file, where the headers are copied to [0], and the normal nu file is in [1]
+		// 3: split virtual fhm file, where only the nut header is in [0], surface headers are in [1...surfaceCount] and data is in [surfaceCount...]
 
 		if (data.Length == NuHeaderSize) {
 			// type 3
@@ -150,22 +150,14 @@ public class NuTexture : Resource {
 			NuTextureFormat.BC1 => DXGIFormat.BC1_UNORM,
 			NuTextureFormat.BC2 => DXGIFormat.BC2_UNORM,
 			NuTextureFormat.BC3 => DXGIFormat.BC3_UNORM,
-			NuTextureFormat.A8 or NuTextureFormat.L8 => DXGIFormat.A8_UNORM,
-			NuTextureFormat.A4R4G4B4 or NuTextureFormat.X4R4G4B4 or NuTextureFormat.Q4W4V4U4 => DXGIFormat.B4G4R4A4_UNORM,
-			NuTextureFormat.A8L8 or NuTextureFormat.V8U8 or NuTextureFormat.G8R8 => DXGIFormat.R8G8_UNORM,
-			NuTextureFormat.L16 => DXGIFormat.R16_UNORM,
-			NuTextureFormat.R16_FLOAT => DXGIFormat.R16_FLOAT,
-			NuTextureFormat.A8R8G8B8 or NuTextureFormat.X8R8G8B8 or NuTextureFormat.A8B8G8R8 or NuTextureFormat.X8B8G8R8 or NuTextureFormat.X8L8V8U8 or NuTextureFormat.Q8W8V8U8 => DXGIFormat.R8G8B8A8_UNORM,
-			NuTextureFormat.X2R10G10B10 or NuTextureFormat.A2B10G10R10 => DXGIFormat.R10G10B10A2_UNORM,
-			NuTextureFormat.A16L16 or NuTextureFormat.G16R16 or NuTextureFormat.V16U16 => DXGIFormat.R16G16_UNORM,
-			NuTextureFormat.G16R16_FLOAT => DXGIFormat.R16G16_FLOAT,
-			NuTextureFormat.L32 => DXGIFormat.R32_UINT,
-			NuTextureFormat.R32_FLOAT => DXGIFormat.R32_FLOAT,
-			NuTextureFormat.A16B16G16R16 or NuTextureFormat.Q16W16V16U16 => DXGIFormat.R16G16B16A16_UNORM,
-			NuTextureFormat.A16B16G16R16_FLOAT => DXGIFormat.R16G16B16A16_FLOAT,
-			NuTextureFormat.A32L32 or NuTextureFormat.G32R32 or NuTextureFormat.V32U32 => DXGIFormat.R32G32_UINT,
-			NuTextureFormat.G32R32_FLOAT => DXGIFormat.R32G32_FLOAT,
-			NuTextureFormat.A32B32G32R32 or NuTextureFormat.Q32W32V32U32 or NuTextureFormat.A32B32G32R32_FLOAT => DXGIFormat.R32G32B32A32_UINT,
+			NuTextureFormat.A8R8G8B8 => DXGIFormat.R8G8B8A8_UNORM,
+			NuTextureFormat.A8 => DXGIFormat.A8_UNORM,
+			NuTextureFormat.B5G5R5A1 => DXGIFormat.B5G5R5A1_UNORM,
+			NuTextureFormat.B5G6R5 => DXGIFormat.B5G6R5_UNORM,
+			NuTextureFormat.B4G4R4A4 => DXGIFormat.B4G4R4A4_UNORM,
+			NuTextureFormat.B8G8R8A8 => DXGIFormat.B8G8R8A8_UNORM,
+			NuTextureFormat.BC4 => DXGIFormat.BC4_SNORM,
+			NuTextureFormat.BC5 => DXGIFormat.BC5_UNORM,
 			_ => DXGIFormat.UNKNOWN,
 		};
 		return format == DXGIFormat.UNKNOWN ? -1 : (int) DDS.CalculateSurfaceSize(info.Width, info.Height, format, info.MipMapCount, out _);
@@ -215,7 +207,6 @@ public class NuTexture : Resource {
 	}
 
 	private static IImageBuffer? DecompressSurface(NuTextureSurface info, IRentedArray<byte> buffer) {
-		// ReSharper disable once SwitchStatementHandlesSomeKnownEnumValuesWithDefault
 		switch (info.PixelFormat) {
 			case NuTextureFormat.BC1: {
 				var pixels = new RentedArray<byte>(info.Width * info.Height * 4);
@@ -232,71 +223,34 @@ public class NuTexture : Resource {
 				BCDec.DecompressBC3(buffer.Memory, pixels.Memory, info.Width, info.Height);
 				return new ImageBuffer<ColorRGBA<byte>, byte>(pixels, info.Width, info.Height);
 			}
-			case NuTextureFormat.DXN:
-			case NuTextureFormat.CTX1: return null;
-			case NuTextureFormat.A8:
-			case NuTextureFormat.L8: {
+			case NuTextureFormat.BC4:{
+				var pixels = new RentedArray<byte>(info.Width * info.Height * 1);
+				BCDec.DecompressBC4(buffer.Memory, pixels.Memory, info.Width, info.Height, false);
+				return new ImageBuffer<ColorR<byte>, byte>(pixels, info.Width, info.Height);
+			}
+			case NuTextureFormat.BC5:{
+				var pixels = new RentedArray<byte>(info.Width * info.Height * 2);
+				BCDec.DecompressBC5(buffer.Memory, pixels.Memory, info.Width, info.Height, false);
+				return new ImageBuffer<ColorRG<byte>, byte>(pixels, info.Width, info.Height);
+			}
+			case NuTextureFormat.A8R8G8B8: {
+				return new ImageBuffer<ColorARGB<byte>, byte>(buffer, info.Width, info.Height);
+			}
+			case NuTextureFormat.A8:{
 				return new ImageBuffer<ColorR<byte>, byte>(buffer, info.Width, info.Height);
 			}
-			case NuTextureFormat.R5G6B5: {
-				return new ImageBuffer<ColorR5G6B5, float>(buffer, info.Width, info.Height);
+			case NuTextureFormat.B5G5R5A1:{
+				return new ImageBuffer<ColorB5G5R5A1, float>(buffer, info.Width, info.Height);
 			}
-			case NuTextureFormat.A4R4G4B4:
-			case NuTextureFormat.X4R4G4B4:
-			case NuTextureFormat.Q4W4V4U4: {
-				return new ImageBuffer<ColorARGB16, byte>(buffer, info.Width, info.Height);
+			case NuTextureFormat.B4G4R4A4:{
+				return new ImageBuffer<ColorB4G4R4A4, byte>(buffer, info.Width, info.Height);
 			}
-			case NuTextureFormat.A8L8:
-			case NuTextureFormat.V8U8:
-			case NuTextureFormat.G8R8:
-				return new ImageBuffer<ColorRG<byte>, byte>(buffer, info.Width, info.Height);
-			case NuTextureFormat.L16:
-				return new ImageBuffer<ColorR<ushort>, ushort>(buffer, info.Width, info.Height);
-			case NuTextureFormat.R16_FLOAT:
-				return new ImageBuffer<ColorR<float>, float>(buffer, info.Width, info.Height);
-			case NuTextureFormat.A8R8G8B8:
-			case NuTextureFormat.X8R8G8B8:
+			case NuTextureFormat.B5G6R5:{
+				return new ImageBuffer<ColorB5G6R5, float>(buffer, info.Width, info.Height);
+			}
+			case NuTextureFormat.B8G8R8A8:{
 				return new ImageBuffer<ColorARGB<byte>, byte>(buffer, info.Width, info.Height);
-			case NuTextureFormat.A8B8G8R8:
-			case NuTextureFormat.X8B8G8R8:
-				return new ImageBuffer<ColorABGR<byte>, byte>(buffer, info.Width, info.Height);
-			case NuTextureFormat.X8L8V8U8:
-			case NuTextureFormat.Q8W8V8U8:
-				return new ImageBuffer<ColorARGB<byte>, byte>(buffer, info.Width, info.Height);
-			case NuTextureFormat.X2R10G10B10:
-			case NuTextureFormat.A2B10G10R10:
-				return new ImageBuffer<ColorA2R10G10B10, float>(buffer, info.Width, info.Height);
-			case NuTextureFormat.A16L16:
-			case NuTextureFormat.G16R16:
-			case NuTextureFormat.V16U16:
-				return new ImageBuffer<ColorRG<ushort>, ushort>(buffer, info.Width, info.Height);
-			case NuTextureFormat.R11G11B10:
-			case NuTextureFormat.W11V11U10:
-				return new ImageBuffer<ColorR11G11B10, float>(buffer, info.Width, info.Height);
-			case NuTextureFormat.G16R16_FLOAT:
-				return new ImageBuffer<ColorRG<float>, float>(buffer, info.Width, info.Height);
-			case NuTextureFormat.L32:
-				return new ImageBuffer<ColorR<uint>, uint>(buffer, info.Width, info.Height);
-			case NuTextureFormat.R32_FLOAT:
-				return new ImageBuffer<ColorR<float>, float>(buffer, info.Width, info.Height);
-			case NuTextureFormat.A16B16G16R16:
-				return new ImageBuffer<ColorABGR<ushort>, ushort>(buffer, info.Width, info.Height);
-			case NuTextureFormat.Q16W16V16U16:
-				return new ImageBuffer<ColorRGBA<ushort>, ushort>(buffer, info.Width, info.Height);
-			case NuTextureFormat.A16B16G16R16_FLOAT:
-				return new ImageBuffer<ColorRGBA<Half>, Half>(buffer, info.Width, info.Height);
-			case NuTextureFormat.A32L32:
-			case NuTextureFormat.G32R32:
-			case NuTextureFormat.V32U32:
-				return new ImageBuffer<ColorRG<uint>, uint>(buffer, info.Width, info.Height);
-			case NuTextureFormat.G32R32_FLOAT:
-				return new ImageBuffer<ColorRG<float>, float>(buffer, info.Width, info.Height);
-			case NuTextureFormat.A32B32G32R32:
-				return new ImageBuffer<ColorABGR<uint>, uint>(buffer, info.Width, info.Height);
-			case NuTextureFormat.Q32W32V32U32:
-				return new ImageBuffer<ColorRGBA<uint>, uint>(buffer, info.Width, info.Height);
-			case NuTextureFormat.A32B32G32R32_FLOAT:
-				return new ImageBuffer<ColorRGBA<float>, float>(buffer, info.Width, info.Height);
+			}
 			default: return null;
 		}
 	}

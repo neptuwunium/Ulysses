@@ -9,7 +9,7 @@ using Ulysses.Json;
 
 namespace Ulysses.Struct;
 
-[EndianSwappable, TransparentStruct<uint>, JsonConverter(typeof(ACEDateConverter))]
+[EndianSwappable, TransparentStruct<uint>, JsonConverter(typeof(ACETimeConverter))]
 public partial struct ACETime {
 	public TimeSpan TimeSpan => TimeSpan.FromSeconds(Value);
 
