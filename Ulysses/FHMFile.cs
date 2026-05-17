@@ -45,6 +45,17 @@ public sealed class FHMFile : IDisposable {
 		Buffer.Dispose();
 	}
 
+	public int FindFHMIndex(FHMItemHeader item) {
+		for (var i = 0; i < Count; ++i) {
+			var header = GetItemHeader(i);
+			if (header == item) {
+				return i;
+			}
+		}
+
+		return -1;
+	}
+
 	public FHMItemHeader GetItemHeader(int index) => MemoryMarshal.Read<FHMItemHeader>(Buffer.Span[(Offset + 4 + index * Unsafe.SizeOf<FHMItemHeader>())..]).ReverseEndianness();
 
 	public FHMItemDataHeader GetItemDataHeader(int index) => GetItemDataHeader(GetItemHeader(index));
@@ -96,8 +107,6 @@ public sealed class FHMFile : IDisposable {
 
 	public FHMFile? GetChildItem(int index) => GetChildItem(GetItemHeader(index));
 	public FHMFile? GetChildItem(FHMItemHeader item) => item.Type != FHMItemType.Child && item.Offset > 0 ? null : new FHMFile(Buffer, Offset + item.Offset, Header);
-
-	public IEnumerable<RebuiltAsset>? RebuildAsset() => ResourceConverter.FindConverter(this)?.Uncook(this);
 
 	public ulong ShapeHash() {
 		using var crc = CRC.Create(CRC64Variants.Default);

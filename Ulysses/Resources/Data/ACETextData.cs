@@ -13,11 +13,11 @@ using Ulysses.Json;
 using Ulysses.Struct;
 using Ulysses.Struct.ACT;
 
-namespace Ulysses;
+namespace Ulysses.Resources.Data;
 
 [JsonConverter(typeof(ACTextConverter))]
-public sealed class ACTextFile : IDisposable {
-	public ACTextFile(IRentedArray<byte> buffer, bool leaveOpen = false) {
+public sealed class ACETextData : IDisposable {
+	public ACETextData(IRentedArray<byte> buffer, bool leaveOpen = false) {
 		Buffer = buffer;
 		LeaveOpen = leaveOpen;
 

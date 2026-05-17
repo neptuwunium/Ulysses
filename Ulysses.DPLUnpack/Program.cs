@@ -10,6 +10,7 @@ using Pluto.IO.Binary;
 using Serilog;
 using Ulysses;
 using Ulysses.DPLUnpack;
+using Ulysses.Resources;
 using Ulysses.Struct;
 using Ulysses.Struct.FHM;
 
@@ -22,7 +23,6 @@ Log.Logger = new LoggerConfiguration()
 
 var flags = CommandLineFlags.Singleton<ProgramFlags>.Instance;
 
-var unknownHashes = new HashSet<uint>();
 using var mgr = ResourceManager.Instance;
 mgr.Mount(flags.InputPath);
 mgr.Collect();
@@ -56,28 +56,12 @@ if (flags.Merged) {
 	}
 }
 
-Log.Debug("Writing all unknown hashes...");
-if (unknownHashes.Count > 0) {
-	using var missingHashFile = new StreamWriter(new FileStream("DplHash.txt", FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite));
-	foreach (var hash in unknownHashes) {
-		missingHashFile.WriteLine(hash.ToString("x8"));
-	}
-}
-
-if (ProcessAsset.UnknownHashes.Count > 0) {
-	using var missingHashFile = new StreamWriter(new FileStream("LvstHash.txt", FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite));
-	foreach (var hash in ProcessAsset.UnknownHashes) {
-		missingHashFile.WriteLine(hash.ToString("x8"));
-	}
-}
-
 return;
 
 void ExtractFHM(IRentedArray<byte> buf, FHMHeader header, string output) {
 	var hashStr = header.HashId.GetDebugString("DPL");
 	if (hashStr.StartsWith("DPL::[0x")) {
 		hashStr = header.HashId.ToString();
-		unknownHashes.Add(header.HashId.Value);
 	}
 
 	var path = Path.Combine(output, hashStr);
@@ -107,43 +91,14 @@ void ExtractFHM(IRentedArray<byte> buf, FHMHeader header, string output) {
 		}
 	}
 
-	ProcessFHM(path, fhm, true);
+	ProcessFHM(fhm, output, hashStr, true);
 }
 
-void ProcessFHM(string path, FHMFile fhm, bool isRoot = false) {
-	if (flags.Convert && fhm.Count > 0) {
-		var rebuiltFiles = fhm.RebuildAsset();
-		if (rebuiltFiles != null) {
-			var first = true;
-			var rebuiltIdx = 0;
-			foreach (var rebuiltFile in rebuiltFiles) {
-				try {
-					var filePath = path;
-					if (!first) {
-						filePath += $".{++rebuiltIdx}";
-					}
-
-					filePath += rebuiltFile.Extension;
-					first = false;
-
-					using var stream = new FileStream(filePath, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
-					Log.Information("Rebuilt {Name}", Path.GetRelativePath(flags.OutputPath, stream.Name));
-					stream.Write(rebuiltFile.Buffer.Span);
-				} finally {
-					rebuiltFile.Dispose();
-				}
-			}
-
-			if (flags.OnlyConvert || flags.ConvertOrRaw) {
-				return;
-			}
-		}
-	}
-
+void ProcessFHM(FHMFile fhm, string path, string name, bool isRoot) {
 	if (isRoot && fhm.Count == 1) {
 		var header = fhm.ItemHeaders.First();
 		if (header.Type == FHMItemType.Normal) {
-			ProcessFHMItem(header, path);
+			ProcessFHMItem(fhm, header, path, name, 0);
 			return;
 		}
 	}
@@ -156,60 +111,76 @@ void ProcessFHM(string path, FHMFile fhm, bool isRoot = false) {
 			if (ext.Length == 0 || ext[0] != '.') {
 				ext = ".bin";
 			}
-			var dir = Path.GetDirectoryName(path)!;
+
+			var bufPath = $"{path}/{name}{ext}";
+			var dir = Path.GetDirectoryName(bufPath)!;
 			Directory.CreateDirectory(dir);
-			using var stream = new FileStream(path + ext, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
+			using var stream = new FileStream(bufPath, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
 			stream.Write(fhmBuf.Span);
 		}
 	}
 
 	var idx = 0;
 	foreach (var itemHeader in fhm.ItemHeaders) {
-		ProcessFHMItem(itemHeader, Path.Combine(path, (idx++).ToString()));
+		ProcessFHMItem(fhm, itemHeader, path, name, idx++);
+	}
+}
+
+void ProcessFHMItem(FHMFile fhm, FHMItemHeader itemHeader, string path, string name, int index) {
+	if (flags.Convert) {
+		using var resource = Resource.Construct(fhm, name, itemHeader, true);
+		if (resource is not null && resource.ResourceCount > 0) {
+			for (var resourceIndex = 0; resourceIndex < resource.ResourceCount; ++resourceIndex) {
+				var resourceName = resource.GetResourceName(resourceIndex, resource.IsFullyUtilized || resource.ResourceCount == 1 ? string.Empty : $"/{resourceIndex}");
+				if (resourceName == null) {
+					continue;
+				}
+
+				var resourcePath = Path.Combine(path, resourceName);
+				var dir = Path.GetDirectoryName(resourcePath)!;
+				Directory.CreateDirectory(dir);
+
+				Log.Information("Saving {Path}", resourceName);
+				using var stream = new FileStream(resourcePath, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
+				resource.UncookToStream(stream, resourceIndex);
+			}
+
+			if (flags.ConvertOrRaw) {
+				return;
+			}
+		}
 	}
 
-	return;
+	if (flags.OnlyConvert) {
+		return;
+	}
 
-	void ProcessFHMItem(FHMItemHeader itemHeader, string currentPath) {
-		if (itemHeader.Type == FHMItemType.Normal) {
-			using var buf = fhm.GetItemData(itemHeader);
-			if (buf.Length == 0) {
-				return;
-			}
+	name = $"{name}/{index}";
 
-			var dir = Path.GetDirectoryName(currentPath)!;
-			Directory.CreateDirectory(dir);
-			var magic = buf.Length >= 4 ? MemoryMarshal.Read<ResourceMagic>(buf.Span) : 0;
-			var ext = magic.Ext;
-			if (ext.Length == 0 || ext[0] != '.') {
-				ext = ".bin";
-			}
-
-			if (flags.Convert) {
-				var didConvert = ProcessAsset.Convert(magic, buf, currentPath);
-				if (didConvert) {
-					Log.Information("Converted {Path}", Path.GetRelativePath(flags.OutputPath, currentPath));
-				}
-
-				if (flags.OnlyConvert) {
-					return;
-				}
-
-				if (didConvert && flags.ConvertOrRaw) {
-					return;
-				}
-			}
-
-			Log.Information("Saving {Path}", Path.GetRelativePath(flags.OutputPath, currentPath + ext));
-			using var stream = new FileStream(currentPath + ext, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
-			stream.Write(buf.Span);
-		} else {
-			using var child = fhm.GetChildItem(itemHeader);
-			if (child == null) {
-				return;
-			}
-
-			ProcessFHM(currentPath, child);
+	if (itemHeader.Type == FHMItemType.Normal) {
+		using var buf = fhm.GetItemData(itemHeader);
+		if (buf.Length == 0) {
+			return;
 		}
+
+		path = Path.Combine(path, name);
+		var dir = Path.GetDirectoryName(path)!;
+		Directory.CreateDirectory(dir);
+		var magic = buf.Length >= 4 ? MemoryMarshal.Read<ResourceMagic>(buf.Span) : 0;
+		var ext = magic.Ext;
+		if (ext.Length == 0 || ext[0] != '.') {
+			ext = ".bin";
+		}
+
+		Log.Information("Saving {Path}", Path.GetRelativePath(flags.OutputPath, path + ext));
+		using var stream = new FileStream(path + ext, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
+		stream.Write(buf.Span);
+	} else {
+		using var child = fhm.GetChildItem(itemHeader);
+		if (child == null) {
+			return;
+		}
+
+		ProcessFHM(child, path, name, false);
 	}
 }

@@ -11,5 +11,5 @@ namespace Ulysses.Struct;
 public partial record struct ACEHeader {
 	public ACEMagic Magic { get; set; }
 	public ACEDate Version { get; set; }
-	public uint Date { get; set; }
+	public ACEDateRev Date { get; set; }
 }

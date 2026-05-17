@@ -39,12 +39,12 @@ public partial record struct NuTextureSurface {
 	public int GetPixelOffset(int version) => version switch {
 		1 => HeaderSize,
 		2 => PixelOffset,
-		_ => -1
+		_ => -1,
 	};
 
 	public int GetSurfaceSize(int version) => version switch {
 		1 => Size,
 		2 => HeaderSize,
-		_ => -1
+		_ => -1,
 	};
 }

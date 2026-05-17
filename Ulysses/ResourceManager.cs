@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using Pluto;
 using Pluto.IO.Binary;
 using Pluto.IO.FileSystem;
+using Serilog;
 using Ulysses.Struct;
 using Ulysses.Struct.FHM;
 
@@ -50,6 +51,7 @@ public sealed class ResourceManager : IDisposable {
 			}
 
 			var dpl = new DPLFile(pacPath, priority);
+			Log.Information("Mounted DPL {DPLName} (Version {Version}, Build Date {Build})", dpl.Name, dpl.Header.ACE.Version, dpl.Header.ACE.Date);
 			DPL.Add(new HashId(dpl.Name), dpl);
 		}
 	}

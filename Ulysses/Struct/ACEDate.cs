@@ -22,3 +22,20 @@ public partial struct ACEDate {
 
 	public override string ToString() => DateTime.ToString("yyyy-MM-dd");
 }
+
+[EndianSwappable, TransparentStruct<uint>, JsonConverter(typeof(ACEDateConverter))]
+public partial struct ACEDateRev {
+	public DateTimeOffset DateTime {
+		get {
+			var v = Value / 100;
+			var year = (int) (v / 10000);
+			var month = (int) (v / 100 % 100);
+			var day = (int) (v % 100);
+			return new DateTimeOffset(year, month, day, 0, 0, 0, TimeSpan.FromHours(9));
+		}
+	}
+
+	public int Revision => (int) (Value % 100);
+
+	public override string ToString() => $"{DateTime:yyyy-MM-dd} v{Revision}";
+}

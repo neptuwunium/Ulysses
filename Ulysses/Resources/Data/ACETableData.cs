@@ -14,11 +14,11 @@ using Ulysses.Json;
 using Ulysses.Struct;
 using Ulysses.Struct.LVST;
 
-namespace Ulysses;
+namespace Ulysses.Resources.Data;
 
-[JsonConverter(typeof(LVSTableConverter))]
-public sealed class LVSTableFile : IDisposable {
-	public LVSTableFile(IRentedArray<byte> buffer, bool leaveOpen = false) {
+[JsonConverter(typeof(ACETableConverter))]
+public sealed class ACETableData : IDisposable {
+	public ACETableData(IRentedArray<byte> buffer, bool leaveOpen = false) {
 		Buffer = buffer;
 		LeaveOpen = leaveOpen;
 

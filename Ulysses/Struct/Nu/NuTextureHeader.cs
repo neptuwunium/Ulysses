@@ -16,4 +16,3 @@ public partial record struct NuTextureHeader {
 	private uint Reserved1 { get; init; }
 	private uint Reserved2 { get; init; }
 }
-

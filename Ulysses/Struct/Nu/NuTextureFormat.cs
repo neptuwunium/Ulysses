@@ -52,4 +52,4 @@ public enum NuTextureFormat : byte {
 	A32B32G32R32 = 0x2c,
 	Q32W32V32U32 = 0x2d,
 	A32B32G32R32_FLOAT = 0x2e,
-};
+}

@@ -4,13 +4,14 @@
 
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Ulysses.Resources.Data;
 
 namespace Ulysses.Json;
 
-public class ACTextConverter : JsonConverter<ACTextFile> {
-	public override ACTextFile Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => throw new NotImplementedException();
+public class ACTextConverter : JsonConverter<ACETextData> {
+	public override ACETextData Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => throw new NotImplementedException();
 
-	public override void Write(Utf8JsonWriter writer, ACTextFile value, JsonSerializerOptions options) {
+	public override void Write(Utf8JsonWriter writer, ACETextData value, JsonSerializerOptions options) {
 		writer.WriteStartObject();
 
 		foreach (var (hash, info) in value.Hashes) {

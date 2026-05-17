@@ -5,14 +5,15 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Pluto;
+using Ulysses.Resources.Data;
 using Ulysses.Struct;
 
 namespace Ulysses.Json;
 
-public class LVSTableConverter : JsonConverter<LVSTableFile> {
-	public override LVSTableFile Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => throw new NotSupportedException();
+public class ACETableConverter : JsonConverter<ACETableData> {
+	public override ACETableData Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => throw new NotSupportedException();
 
-	public override void Write(Utf8JsonWriter writer, LVSTableFile value, JsonSerializerOptions options) {
+	public override void Write(Utf8JsonWriter writer, ACETableData value, JsonSerializerOptions options) {
 		writer.WriteStartArray();
 
 		var obj = ObjectPool<Dictionary<HashId, object?>>.Rent();
