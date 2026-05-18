@@ -163,9 +163,9 @@ public class NuTexture : Resource {
 		return format == DXGIFormat.UNKNOWN ? -1 : (int) DDS.CalculateSurfaceSize(info.Width, info.Height, format, info.MipMapCount, out _);
 	}
 
-	public override string? GetResourceName(int resourceIndex, string prefix) => ResourceCount switch {
-		1 => Name + prefix + ".png",
-		> 1 => Name + prefix + $"{resourceIndex}.png",
+	public override string? GetResourceName(int resourceIndex, string baseName) => ResourceCount switch {
+		1 => baseName + ".png",
+		> 1 => baseName + $"/{resourceIndex}.png",
 		_ => null,
 	};
 

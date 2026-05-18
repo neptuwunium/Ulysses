@@ -21,7 +21,7 @@ public class ACEText : Resource {
 	public ACETextData? Data { get; private set; }
 	public override int ResourceCount => Data != null ? 1 : 0;
 
-	public override string? GetResourceName(int resourceIndex, string prefix) => Data != null ? Name + prefix + ".json" : null;
+	public override string? GetResourceName(int resourceIndex, string baseName) => Data != null ? baseName + ".json" : null;
 
 	public override bool Save(Stream stream, int resourceIndex) {
 		if (Data == null) {

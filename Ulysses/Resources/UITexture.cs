@@ -9,6 +9,6 @@ namespace Ulysses.Resources;
 public class UITexture : Resource {
 	public UITexture(FHMFile fhm, FHMItemHeader item, string name, bool leaveOpen = false) : base(fhm, name, leaveOpen) { }
 
-	public override string? GetResourceName(int resourceIndex, string prefix) => null;
+	public override string? GetResourceName(int resourceIndex, string baseName) => null;
 	public override bool Save(Stream stream, int resourceIndex) => false;
 }

@@ -39,7 +39,7 @@ public abstract class Resource : IDisposable {
 	}
 
 	~Resource() => Dispose(false);
-	public abstract string? GetResourceName(int resourceIndex, string prefix);
+	public abstract string? GetResourceName(int resourceIndex, string baseName);
 	public abstract bool Save(Stream stream, int resourceIndex);
 
 	protected virtual void Dispose(bool disposing) {
