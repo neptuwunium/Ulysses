@@ -136,7 +136,7 @@ bool ProcessFHMItem(FHMFile fhm, FHMItemHeader itemHeader, string path, string n
 			var didConvert = true;
 
 			for (var resourceIndex = 0; resourceIndex < resource.ResourceCount; ++resourceIndex) {
-				var resourceName = resource.GetResourceName(resourceIndex, resource.ResourceCount == 1 && (fhm.Count == 1 || resource.IsFullyUtilized) ? string.Empty : $"/{resourceIndex}");
+				var resourceName = resource.GetResourceName(resourceIndex, resource.ResourceCount == 1 && (fhm.Count == 1 || resource.IsFullyUtilized) ? string.Empty : $"/{itemIndex}");
 				if (resourceName == null) {
 					continue;
 				}
