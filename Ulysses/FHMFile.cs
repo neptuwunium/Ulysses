@@ -62,7 +62,7 @@ public sealed class FHMFile : IDisposable {
 
 	public FHMItemDataHeader GetItemDataHeader(FHMItemHeader item) => item.Type != FHMItemType.Normal ? default : MemoryMarshal.Read<FHMItemDataHeader>(Buffer.Span[(Offset + item.Offset)..]).ReverseEndianness();
 
-	public IRentedArray<byte>? GetFullBuffer() {
+	public IRentedArray<byte> GetFullBuffer() {
 		if (Count == 0) {
 			return RentedArray<byte>.Empty;
 		}
@@ -71,7 +71,7 @@ public sealed class FHMFile : IDisposable {
 		var size = 0;
 		foreach (var item in ItemHeaders) {
 			if (item.Type != FHMItemType.Normal) {
-				return null;
+				return RentedArray<byte>.Empty;
 			}
 
 			var header = GetItemDataHeader(item);
@@ -82,14 +82,14 @@ public sealed class FHMFile : IDisposable {
 			Debug.Assert(offset + size == header.Offset);
 
 			if (offset > header.Offset) {
-				return null;
+				return RentedArray<byte>.Empty;
 			}
 
 			size += header.Size;
 		}
 
 		if (size == 0 || offset == -1) {
-			return null;
+			return RentedArray<byte>.Empty;
 		}
 
 		return new UnownedRentedArray<byte>(Buffer, offset, size);

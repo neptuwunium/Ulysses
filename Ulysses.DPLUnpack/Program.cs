@@ -104,7 +104,7 @@ void ProcessFHM(FHMFile fhm, string path, string name, bool isRoot) {
 
 	if (!isRoot && flags.SaveFHMBuffer) {
 		using var fhmBuf = fhm.GetFullBuffer();
-		if (fhmBuf != null) {
+		if (fhmBuf.Length > 0) {
 			var magic = fhmBuf.Length >= 4 ? MemoryMarshal.Read<ResourceMagic>(fhmBuf.Span) : 0;
 			var ext = magic.Ext;
 			if (ext.Length == 0 || ext[0] != '.') {
