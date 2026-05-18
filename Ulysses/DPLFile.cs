@@ -226,7 +226,7 @@ public sealed class DPLFile : IDisposable {
 			}
 		}
 
-		private static void Add(Span<uint> x, Span<uint> y, int digit) {
+		private static void Add(Span<uint> x, ReadOnlySpan<uint> y, int digit) {
 			if (digit <= 0) {
 				return;
 			}
@@ -239,7 +239,7 @@ public sealed class DPLFile : IDisposable {
 			}
 		}
 
-		private static void Sub(Span<uint> x, Span<uint> y, int digit) {
+		private static void Sub(Span<uint> x, ReadOnlySpan<uint> y, int digit) {
 			if (digit <= 0) {
 				return;
 			}

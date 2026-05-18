@@ -66,8 +66,6 @@ void ExtractFHM(IRentedArray<byte> buf, FHMHeader header, string output) {
 
 	var path = Path.Combine(output, hashStr);
 
-	// a fhm is basically anything. textures for example are split up into several slices.
-	// need to check if fhm[0] is something we can read and then rebuild the original asset so it is easier to read
 	using var fhm = new FHMFile(buf, 0, header);
 
 	if (flags.FHMShape) {
@@ -95,6 +93,7 @@ void ExtractFHM(IRentedArray<byte> buf, FHMHeader header, string output) {
 }
 
 void ProcessFHM(FHMFile fhm, string path, string name, bool isRoot) {
+	// ReSharper disable once ConvertIfStatementToSwitchStatement
 	if (isRoot && fhm.Count == 1) {
 		var header = fhm.ItemHeaders.First();
 		if (header.Type == FHMItemType.Normal) {
@@ -147,11 +146,13 @@ bool ProcessFHMItem(FHMFile fhm, FHMItemHeader itemHeader, string path, string n
 
 				Log.Information("Saving {Path}", resourceName);
 				using var stream = new FileStream(resourcePath, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
-				if (!resource.Save(stream, resourceIndex)) {
-					File.Delete(resourcePath);
-					didConvert = false;
-					break;
+				if (resource.Save(stream, resourceIndex)) {
+					continue;
 				}
+
+				File.Delete(resourcePath);
+				didConvert = false;
+				break;
 			}
 
 			if (flags.ConvertOrRaw && didConvert) {

@@ -223,12 +223,12 @@ public class NuTexture : Resource {
 				BCDec.DecompressBC3(buffer.Memory, pixels.Memory, info.Width, info.Height);
 				return new ImageBuffer<ColorRGBA<byte>, byte>(pixels, info.Width, info.Height);
 			}
-			case NuTextureFormat.BC4:{
+			case NuTextureFormat.BC4: {
 				var pixels = new RentedArray<byte>(info.Width * info.Height * 1);
 				BCDec.DecompressBC4(buffer.Memory, pixels.Memory, info.Width, info.Height, false);
 				return new ImageBuffer<ColorR<byte>, byte>(pixels, info.Width, info.Height);
 			}
-			case NuTextureFormat.BC5:{
+			case NuTextureFormat.BC5: {
 				var pixels = new RentedArray<byte>(info.Width * info.Height * 2);
 				BCDec.DecompressBC5(buffer.Memory, pixels.Memory, info.Width, info.Height, false);
 				return new ImageBuffer<ColorRG<byte>, byte>(pixels, info.Width, info.Height);
@@ -236,19 +236,19 @@ public class NuTexture : Resource {
 			case NuTextureFormat.A8R8G8B8: {
 				return new ImageBuffer<ColorARGB<byte>, byte>(buffer, info.Width, info.Height);
 			}
-			case NuTextureFormat.A8:{
+			case NuTextureFormat.A8: {
 				return new ImageBuffer<ColorR<byte>, byte>(buffer, info.Width, info.Height);
 			}
-			case NuTextureFormat.B5G5R5A1:{
+			case NuTextureFormat.B5G5R5A1: {
 				return new ImageBuffer<ColorB5G5R5A1, float>(buffer, info.Width, info.Height);
 			}
-			case NuTextureFormat.B4G4R4A4:{
+			case NuTextureFormat.B4G4R4A4: {
 				return new ImageBuffer<ColorB4G4R4A4, byte>(buffer, info.Width, info.Height);
 			}
-			case NuTextureFormat.B5G6R5:{
+			case NuTextureFormat.B5G6R5: {
 				return new ImageBuffer<ColorB5G6R5, float>(buffer, info.Width, info.Height);
 			}
-			case NuTextureFormat.B8G8R8A8:{
+			case NuTextureFormat.B8G8R8A8: {
 				return new ImageBuffer<ColorARGB<byte>, byte>(buffer, info.Width, info.Height);
 			}
 			default: return null;

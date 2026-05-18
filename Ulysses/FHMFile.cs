@@ -60,13 +60,7 @@ public sealed class FHMFile : IDisposable {
 
 	public FHMItemDataHeader GetItemDataHeader(int index) => index >= Count ? default : GetItemDataHeader(GetItemHeader(index));
 
-	public FHMItemDataHeader GetItemDataHeader(FHMItemHeader item) {
-		if (item.Type != FHMItemType.Normal) {
-			return default;
-		}
-
-		return MemoryMarshal.Read<FHMItemDataHeader>(Buffer.Span[(Offset + item.Offset)..]).ReverseEndianness();
-	}
+	public FHMItemDataHeader GetItemDataHeader(FHMItemHeader item) => item.Type != FHMItemType.Normal ? default : MemoryMarshal.Read<FHMItemDataHeader>(Buffer.Span[(Offset + item.Offset)..]).ReverseEndianness();
 
 	public IRentedArray<byte>? GetFullBuffer() {
 		if (Count == 0) {

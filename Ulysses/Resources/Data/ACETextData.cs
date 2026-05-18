@@ -22,8 +22,6 @@ public sealed class ACETextData : IDisposable {
 		ShiftJIS = Encoding.GetEncoding(932);
 	}
 
-	private static Encoding ShiftJIS { get; }
-
 	public ACETextData(IRentedArray<byte> buffer, bool leaveOpen = false) {
 		Buffer = buffer;
 		LeaveOpen = leaveOpen;
@@ -72,6 +70,8 @@ public sealed class ACETextData : IDisposable {
 		}
 	}
 
+	private static Encoding ShiftJIS { get; }
+
 	public bool LeaveOpen { get; }
 	public ACTHeader Header { get; }
 	public IRentedArray<byte> Buffer { get; }
@@ -110,6 +110,7 @@ public sealed class ACETextData : IDisposable {
 
 		var codepoints = MemoryMarshal.Cast<byte, T>(Buffer.Span[offset..]);
 		var zero = codepoints.IndexOf(default(T));
+		// ReSharper disable once ConvertIfStatementToSwitchStatement
 		if (zero == 0) {
 			return string.Empty;
 		}
