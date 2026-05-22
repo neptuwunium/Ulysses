@@ -44,7 +44,7 @@ public sealed class ResourceManager : IDisposable {
 	}
 
 	public void Mount(string path) {
-		foreach (var pacPath in new FileEnumerator(path, "*.PAC")) {
+		foreach (var pacPath in new FileEnumerator(path, new EnumerationOptions { RecurseSubdirectories = true }, "*.PAC")) {
 			var priority = DPLFile.GetPriority(pacPath);
 			if (priority < 0) {
 				continue;

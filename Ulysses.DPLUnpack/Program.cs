@@ -29,7 +29,7 @@ mgr.Collect();
 
 if (flags.Merged) {
 	foreach (var id in mgr.FHM.Keys) {
-		Directory.CreateDirectory(flags.OutputPath);
+		CreateDirectory(flags.OutputPath);
 
 		using var buf = mgr.ReadFile(id, out var header);
 		if (buf == null) {
@@ -41,8 +41,9 @@ if (flags.Merged) {
 	}
 } else {
 	foreach (var dpl in mgr.DPL.Values) {
+		HashTracker.AddHashes(dpl);
 		var output = Path.Combine(flags.OutputPath, dpl.Name);
-		Directory.CreateDirectory(output);
+		CreateDirectory(output);
 
 		foreach (var (id, (_, header)) in dpl.FHMTable) {
 			using var buf = dpl.ReadFile(id);
@@ -51,12 +52,53 @@ if (flags.Merged) {
 				continue;
 			}
 
+			HashTracker.AddStrings(buf, true);
 			ExtractFHM(buf, header, output);
 		}
 	}
 }
 
+if (flags.DumpHashes) {
+	using (var stream = new StreamWriter(CreateFile("DplHash.txt", true))) {
+		stream.NewLine = "\n";
+		foreach (var hash in HashTracker.DPLHashes) {
+			stream.WriteLine(hash.ToString("x8"));
+		}
+	}
+
+	using (var stream = new StreamWriter(CreateFile("TextHash.txt", true))) {
+		stream.NewLine = "\n";
+		foreach (var hash in HashTracker.Hashes) {
+			stream.WriteLine(hash.ToString("x8"));
+		}
+	}
+}
+
+if (flags.DumpStrings) {
+	using var stream = new StreamWriter(CreateFile("Strings.txt", true));
+	stream.NewLine = "\n";
+	foreach (var str in HashTracker.Strings) {
+		stream.WriteLine(str);
+	}
+}
+
 return;
+
+void CreateDirectory(string path) {
+	if (flags.Dry) {
+		return;
+	}
+
+	Directory.CreateDirectory(path);
+}
+
+Stream CreateFile(string path, bool ovr = false) {
+	if (flags.Dry && !ovr) {
+		return Stream.Null;
+	}
+
+	return new FileStream(path, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
+}
 
 void ExtractFHM(IRentedArray<byte> buf, FHMHeader header, string output) {
 	var hashStr = header.HashId.GetDebugString("DPL");
@@ -73,14 +115,14 @@ void ExtractFHM(IRentedArray<byte> buf, FHMHeader header, string output) {
 		builder.Clear();
 		builder.AppendLine($"Hash {fhm.ShapeHash():x16}");
 		fhm.DumpShape(builder, 0);
-		using var stream = new StreamWriter(new FileStream(path + ".fhmshape", FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite));
+		using var stream = new StreamWriter(CreateFile(path + ".fhmshape"));
 		stream.Write(builder.ToString());
 		builder.Clear();
 		ObjectPool<StringBuilder>.Return(builder);
 	}
 
 	if (flags.SaveFHM) {
-		using var stream = new FileStream(path + ".fhm", FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
+		using var stream = CreateFile(path + ".fhm");
 		stream.Write(buf.Span);
 
 		if (flags.OnlyFHM) {
@@ -113,8 +155,8 @@ void ProcessFHM(FHMFile fhm, string path, string name, bool isRoot) {
 
 			var bufPath = $"{path}/{name}{ext}";
 			var dir = Path.GetDirectoryName(bufPath)!;
-			Directory.CreateDirectory(dir);
-			using var stream = new FileStream(bufPath, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
+			CreateDirectory(dir);
+			using var stream = CreateFile(bufPath);
 			stream.Write(fhmBuf.Span);
 		}
 	}
@@ -147,10 +189,10 @@ bool ProcessFHMItem(FHMFile fhm, FHMItemHeader itemHeader, string path, string n
 
 				var resourcePath = Path.Combine(path, resourceName);
 				var dir = Path.GetDirectoryName(resourcePath)!;
-				Directory.CreateDirectory(dir);
+				CreateDirectory(dir);
 
 				Log.Information("Saving {Path}", resourceName);
-				using var stream = new FileStream(resourcePath, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
+				using var stream = CreateFile(resourcePath);
 				if (resource.Save(stream, resourceIndex)) {
 					continue;
 				}
@@ -178,9 +220,10 @@ bool ProcessFHMItem(FHMFile fhm, FHMItemHeader itemHeader, string path, string n
 			return false;
 		}
 
+		HashTracker.AddData(buf);
 		path = Path.Combine(path, name);
 		var dir = Path.GetDirectoryName(path)!;
-		Directory.CreateDirectory(dir);
+		CreateDirectory(dir);
 		var magic = buf.Length >= 4 ? MemoryMarshal.Read<ResourceMagic>(buf.Span) : 0;
 		var ext = magic.Ext;
 		if (ext.Length == 0 || ext[0] != '.') {
@@ -188,7 +231,7 @@ bool ProcessFHMItem(FHMFile fhm, FHMItemHeader itemHeader, string path, string n
 		}
 
 		Log.Information("Saving {Path}", Path.GetRelativePath(flags.OutputPath, path + ext));
-		using var stream = new FileStream(path + ext, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
+		using var stream = CreateFile(path + ext);
 		stream.Write(buf.Span);
 	} else {
 		using var child = fhm.GetChildItem(itemHeader);

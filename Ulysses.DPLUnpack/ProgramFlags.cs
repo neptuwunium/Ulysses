@@ -22,6 +22,12 @@ public record ProgramFlags : CommandLineFlags {
 	[Flag("convert-or-raw", Help = "Convert if possible, otherwise dump raw data. Needs --convert")]
 	public bool ConvertOrRaw { get; set; }
 
+	[Flag("merged-pac", Help = "Merge PAC files so only the most recent files are saved")]
+	public bool Merged { get; set; }
+
+	[Flag("dry", Help = "Do not write any files")]
+	public bool Dry { get; set; }
+
 	[Flag("fhm", Help = "Save the raw FHM file", Hidden = true)]
 	public bool SaveFHM { get; set; }
 
@@ -34,6 +40,9 @@ public record ProgramFlags : CommandLineFlags {
 	[Flag("fhm-shape", Help = "Save the FHM shape for debugging", Hidden = true)]
 	public bool FHMShape { get; set; }
 
-	[Flag("merged-pac", Help = "Merge PAC files so only the most recent files are saved")]
-	public bool Merged { get; set; }
+	[Flag("dump-strings", Help = "Dump text strings that may exist in the binaries", Hidden = true)]
+	public bool DumpStrings { get; set; }
+
+	[Flag("dump-hashes", Help = "Dump any hashes that exist in the files", Hidden = true)]
+	public bool DumpHashes { get; set; }
 }
