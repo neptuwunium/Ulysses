@@ -11,7 +11,7 @@ namespace Ulysses.Struct;
 
 [EndianSwappable, TransparentStruct<uint>, JsonConverter(typeof(ACETimeConverter))]
 public partial struct ACETime {
-	public TimeSpan TimeSpan => TimeSpan.FromSeconds(Value);
+	public TimeSpan TimeSpan => this == default ? default : TimeSpan.FromSeconds(Value);
 
 	public override string ToString() => TimeSpan.ToString("HH:mm:ss");
 }

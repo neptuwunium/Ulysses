@@ -13,6 +13,10 @@ namespace Ulysses.Struct;
 public partial struct ACEDate {
 	public DateTimeOffset DateTime {
 		get {
+			if (this == default) {
+				return default;
+			}
+
 			var year = (int) (Value / 10000);
 			var month = (int) (Value / 100 % 100);
 			var day = (int) (Value % 100);
@@ -27,6 +31,10 @@ public partial struct ACEDate {
 public partial struct ACEDateRev {
 	public DateTimeOffset DateTime {
 		get {
+			if (this == default) {
+				return default;
+			}
+
 			var v = Value / 100;
 			var year = (int) (v / 10000);
 			var month = (int) (v / 100 % 100);
