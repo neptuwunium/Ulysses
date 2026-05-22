@@ -6,15 +6,20 @@ using System.Globalization;
 using Ulysses.Struct;
 
 var dplHash = new HashSet<uint>();
-var lvstHash = new HashSet<uint>();
+var textHash = new HashSet<uint>();
 var dplPrefix = IdRegistry.Lookup.Where(x => x.Value.StartsWith("DPL_")).Select(x => x.Value).ToHashSet();
 
 if (File.Exists("DplHash.txt")) {
 	LoadHashFile("DplHash.txt", dplHash);
 }
 
-if (File.Exists("LvstHash.txt")) {
-	LoadHashFile("LvstHash.txt", lvstHash);
+if (File.Exists("TextHash.txt")) {
+	LoadHashFile("TextHash.txt", textHash);
+}
+
+foreach (var id in IdRegistry.Lookup.Keys) {
+	dplHash.Remove(id);
+	textHash.Remove(id);
 }
 
 if (dplHash.Count > 0) {
@@ -97,7 +102,19 @@ using (var fs = new StreamReader(new FileStream("names.txt", FileMode.Open, File
 	}
 }
 
-if (lvstHash.Count > 0) {
+using (var fs = new StreamReader(new FileStream("Strings.txt", FileMode.Open, FileAccess.Read, FileShare.ReadWrite))) {
+	while (fs.ReadLine() is { } line) {
+		line = line.Trim();
+		if (line.Length < 5) {
+			continue;
+		}
+
+		lines.Add(line);
+		linesUpper.Add(line.ToUpperInvariant());
+	}
+}
+
+if (textHash.Count > 0) {
 	Parallel.ForEach(lines, TestLvstHashFormat);
 }
 
@@ -128,7 +145,7 @@ void TestDplHash(string text) {
 
 void TestLvstHash(string text) {
 	var hash = IdRegistry.Hash(text);
-	if (lvstHash.Contains(hash)) {
+	if (textHash.Contains(hash)) {
 		Console.WriteLine($"LVST,{hash:x8},{text}");
 	}
 }
