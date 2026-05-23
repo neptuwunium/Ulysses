@@ -42,4 +42,7 @@ public record ProgramFlags : CommandLineFlags {
 
 	[Flag("dump-hashes", Help = "Dump any hashes that exist in the files", Hidden = true)]
 	public bool DumpHashes { get; set; }
+
+	[Flag("dump-dpl", Help = "Dump DPL table info", Hidden = true)]
+	public bool DumpDPL { get; set; }
 }

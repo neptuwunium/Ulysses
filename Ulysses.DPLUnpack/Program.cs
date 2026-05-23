@@ -58,6 +58,23 @@ if (flags.Merged) {
 	}
 }
 
+if (flags.DumpDPL) {
+	var infoTarget = Path.Combine(flags.OutputPath, "__ULYSSES_DPL_INFO");
+	Directory.CreateDirectory(infoTarget);
+	foreach (var dpl in mgr.DPL.Values) {
+		using var stream = new StreamWriter(CreateFile(Path.Combine(infoTarget, dpl.Name + ".csv"), true));
+		stream.NewLine = "\n";
+		stream.WriteLine("id,group_id,name,deleted");
+		foreach (var (_, header) in dpl.FHMTable.Values) {
+			stream.Write($"{header.HashId.Value:x08},");
+			stream.Write($"{header.GroupId:x04},");
+			stream.Write($"{(header.HashId.HasValue ? header.HashId.ToString() : "")},");
+			stream.Write($"{(header.IsDeleted ? "yes" : "no")}");
+			stream.WriteLine();
+		}
+	}
+}
+
 if (flags.DumpHashes) {
 	using (var stream = new StreamWriter(CreateFile("DplHash.txt", true))) {
 		stream.NewLine = "\n";
@@ -101,10 +118,7 @@ Stream CreateFile(string path, bool ovr = false) {
 }
 
 void ExtractFHM(IRentedArray<byte> buf, FHMHeader header, string output) {
-	var hashStr = header.HashId.GetDebugString("DPL");
-	if (hashStr.StartsWith("DPL::[0x")) {
-		hashStr = header.HashId.ToString();
-	}
+	var hashStr = header.HashId.HasValue ? header.HashId.ToString() : $"DPL_0x{header.HashId.Value:x8}";
 
 	var path = Path.Combine(output, hashStr);
 
@@ -169,9 +183,9 @@ void ProcessFHM(FHMFile fhm, string path, string name, bool isRoot) {
 	}
 }
 
-bool ProcessFHMItem(FHMFile fhm, FHMItemHeader itemHeader, string path, string dplName, int itemIndex) {
+bool ProcessFHMItem(FHMFile fhm, FHMItemHeader itemHeader, string outputPath, string dplName, int itemIndex) {
 	if (flags.OnlyConvert) {
-		return ProcessResource(fhm, itemHeader, dplName, path, itemIndex);
+		return ProcessResource(fhm, itemHeader, dplName, outputPath, itemIndex);
 	}
 
 	var name = $"{dplName}/{itemIndex}";
@@ -183,7 +197,7 @@ bool ProcessFHMItem(FHMFile fhm, FHMItemHeader itemHeader, string path, string d
 		}
 
 		HashTracker.AddData(buf);
-		path = Path.Combine(path, name);
+		var path = Path.Combine(outputPath, name);
 		var dir = Path.GetDirectoryName(path)!;
 		CreateDirectory(dir);
 		var magic = buf.Length >= 4 ? MemoryMarshal.Read<ResourceMagic>(buf.Span) : 0;
@@ -201,10 +215,10 @@ bool ProcessFHMItem(FHMFile fhm, FHMItemHeader itemHeader, string path, string d
 			return false;
 		}
 
-		ProcessFHM(child, path, name, false);
+		ProcessFHM(child, outputPath, name, false);
 	}
 
-	return ProcessResource(fhm, itemHeader, dplName, path, itemIndex);
+	return ProcessResource(fhm, itemHeader, dplName, outputPath, itemIndex);
 }
 
 bool ProcessResource(FHMFile fhmFile, FHMItemHeader fhmItemHeader, string dplName, string path, int itemIndex) {
