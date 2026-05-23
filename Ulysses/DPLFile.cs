@@ -40,8 +40,6 @@ public sealed class DPLFile : IDisposable {
 			var offset = reader.Position;
 			var header = reader.Read<FHMHeader>().ReverseEndianness();
 
-			IdRegistry.Register(header.HashId, $"DPL::[0x{header.HashId.Value:x8}]");
-
 			reader.Skip<FHMMemoryRange>(header.MemoryRangeCount);
 
 			FHMTable.Add(header.HashId, (offset, header));

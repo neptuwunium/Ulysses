@@ -188,11 +188,20 @@ void ProcessFHM(FHMFile fhm, string path, string name, bool isRoot) {
 }
 
 bool ProcessFHMItem(FHMFile fhm, FHMItemHeader itemHeader, string outputPath, string dplName, int itemIndex) {
-	if (flags.OnlyConvert) {
-		return ProcessResource(fhm, itemHeader, dplName, outputPath, itemIndex);
-	}
-
 	var name = $"{dplName}/{itemIndex}";
+
+	if (flags.OnlyConvert) {
+		var result = ProcessResource(fhm, itemHeader, dplName, outputPath, itemIndex);
+		if (result) {
+			return true;
+		}
+
+		if (itemHeader.Type == FHMItemType.Child) {
+			ProcessFHMChild(fhm, itemHeader, outputPath, name);
+		}
+
+		return false;
+	}
 
 	if (itemHeader.Type == FHMItemType.Normal) {
 		using var buf = fhm.GetItemData(itemHeader);
@@ -209,12 +218,7 @@ bool ProcessFHMItem(FHMFile fhm, FHMItemHeader itemHeader, string outputPath, st
 		using var stream = CreateFile(path + ext);
 		stream.Write(buf.Span);
 	} else {
-		using var child = fhm.GetChildItem(itemHeader);
-		if (child == null) {
-			return false;
-		}
-
-		ProcessFHM(child, outputPath, name, false);
+		ProcessFHMChild(fhm, itemHeader, outputPath, name);
 	}
 
 	return ProcessResource(fhm, itemHeader, dplName, outputPath, itemIndex);
@@ -258,4 +262,13 @@ bool ProcessResource(FHMFile fhmFile, FHMItemHeader fhmItemHeader, string dplNam
 	}
 
 	return resource.IsFullyUtilized;
+}
+
+void ProcessFHMChild(FHMFile fhmFile, FHMItemHeader fhmItemHeader, string path, string name) {
+	using var child = fhmFile.GetChildItem(fhmItemHeader);
+	if (child == null) {
+		return;
+	}
+
+	ProcessFHM(child, path, name, false);
 }
