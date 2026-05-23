@@ -44,7 +44,7 @@ public sealed class ACETextData : IDisposable {
 
 		reader.Position = Header.LanguageTableOffset;
 		for (var index = 0; index < Header.LanguageCount; ++index) {
-			Languages[reader.ReadCString<byte>(Encoding.ASCII, 2, true)] = BinaryPrimitives.ReverseEndianness(reader.Read<ushort>());
+			Languages[reader.ReadCString<byte>(Encoding.ASCII, 3, true)] = BinaryPrimitives.ReverseEndianness(reader.Read<byte>());
 		}
 
 		reader.Position = Header.TextTableOffset;

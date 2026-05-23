@@ -24,6 +24,10 @@ public sealed class DPLFile : IDisposable {
 		using var reader = new MemoryMapBinaryReader(File, leaveOpen: true);
 		Header = reader.Read<DPLHeader>().ReverseEndianness();
 
+		if (Header.ACE.Magic.Value != 0x44504C) {
+			throw new InvalidDataException();
+		}
+
 		FHMTable = ObjectPool<Dictionary<HashId, (int Offset, FHMHeader Header)>>.Rent();
 		FHMTable.Clear();
 		FHMTable.EnsureCapacity(Header.Count);

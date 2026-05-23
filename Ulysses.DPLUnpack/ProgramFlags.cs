@@ -19,9 +19,6 @@ public record ProgramFlags : CommandLineFlags {
 	[Flag("only-convert", Help = "Only convert assets, do not dump raw data. Needs --convert")]
 	public bool OnlyConvert { get; set; }
 
-	[Flag("convert-or-raw", Help = "Convert if possible, otherwise dump raw data. Needs --convert")]
-	public bool ConvertOrRaw { get; set; }
-
 	[Flag("merged-pac", Help = "Merge PAC files so only the most recent files are saved")]
 	public bool Merged { get; set; }
 

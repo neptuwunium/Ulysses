@@ -169,52 +169,14 @@ void ProcessFHM(FHMFile fhm, string path, string name, bool isRoot) {
 	}
 }
 
-bool ProcessFHMItem(FHMFile fhm, FHMItemHeader itemHeader, string path, string name, int itemIndex) {
-	if (flags.Convert) {
-		using var resource = Resource.Construct(fhm, itemHeader, itemIndex, name, true);
-
-		if (resource is not null && resource.ResourceCount > 0) {
-			var didConvert = true;
-
-			var baseName = name;
-			if (resource.ResourceCount > 1 || !resource.IsFullyUtilized) {
-				baseName += $"/{itemIndex}";
-			}
-
-			for (var resourceIndex = 0; resourceIndex < resource.ResourceCount; ++resourceIndex) {
-				var resourceName = resource.GetResourceName(resourceIndex, baseName);
-				if (resourceName == null) {
-					continue;
-				}
-
-				var resourcePath = Path.Combine(path, resourceName);
-				var dir = Path.GetDirectoryName(resourcePath)!;
-				CreateDirectory(dir);
-
-				Log.Information("Saving {Path}", resourceName);
-				using var stream = CreateFile(resourcePath);
-				if (resource.Save(stream, resourceIndex)) {
-					continue;
-				}
-
-				File.Delete(resourcePath);
-				didConvert = false;
-				break;
-			}
-
-			if (flags.ConvertOrRaw && didConvert) {
-				return resource.IsFullyUtilized;
-			}
-		}
+bool ProcessFHMItem(FHMFile fhm, FHMItemHeader itemHeader, string path, string dplName, int itemIndex) {
+	if (flags.OnlyConvert) {
+		return ProcessResource(fhm, itemHeader, dplName, path, itemIndex);
 	}
 
-	name = $"{name}/{itemIndex}";
+	var name = $"{dplName}/{itemIndex}";
 
 	if (itemHeader.Type == FHMItemType.Normal) {
-		if (flags.OnlyConvert) {
-			return false;
-		}
-
 		using var buf = fhm.GetItemData(itemHeader);
 		if (buf.Length == 0) {
 			return false;
@@ -242,5 +204,44 @@ bool ProcessFHMItem(FHMFile fhm, FHMItemHeader itemHeader, string path, string n
 		ProcessFHM(child, path, name, false);
 	}
 
-	return false;
+	return ProcessResource(fhm, itemHeader, dplName, path, itemIndex);
+}
+
+bool ProcessResource(FHMFile fhmFile, FHMItemHeader fhmItemHeader, string dplName, string path, int itemIndex) {
+	if (flags is { Convert: false, OnlyConvert: false }) {
+		return false;
+	}
+
+	using var resource = Resource.Construct(fhmFile, fhmItemHeader, itemIndex, dplName, true);
+
+	if (resource is null || resource.ResourceCount <= 0) {
+		return false;
+	}
+
+	var baseName = dplName;
+	if (resource.ResourceCount > 1 || !resource.IsFullyUtilized) {
+		baseName += $"/{itemIndex}";
+	}
+
+	for (var resourceIndex = 0; resourceIndex < resource.ResourceCount; ++resourceIndex) {
+		var resourceName = resource.GetResourceName(resourceIndex, baseName);
+		if (resourceName == null) {
+			continue;
+		}
+
+		var resourcePath = Path.Combine(path, resourceName);
+		var dir = Path.GetDirectoryName(resourcePath)!;
+		CreateDirectory(dir);
+
+		Log.Information("Saving {Path}", resourceName);
+		using var stream = CreateFile(resourcePath);
+		if (resource.Save(stream, resourceIndex)) {
+			continue;
+		}
+
+		File.Delete(resourcePath);
+		return false;
+	}
+
+	return resource.IsFullyUtilized;
 }

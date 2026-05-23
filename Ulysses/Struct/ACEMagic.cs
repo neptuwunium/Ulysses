@@ -14,7 +14,7 @@ public record struct ACEMagic {
 	public bool IsBigEndian { get; set; }
 
 	public uint Value {
-		get => ((uint) B0 << 16) | ((uint) B1 << 8) | B0;
+		get => ((uint) B0 << 16) | ((uint) B1 << 8) | B2;
 		set {
 			B0 = (byte) (value >> 16);
 			B1 = (byte) (value >> 8);
