@@ -17,7 +17,6 @@ using Ulysses.Struct.FHM;
 Log.Logger = new LoggerConfiguration()
 			 .MinimumLevel.Debug()
 			 .WriteTo.Console()
-			 .MinimumLevel.Debug()
 			 .WriteTo.File("Ulysses.log")
 			 .CreateLogger();
 
@@ -27,10 +26,10 @@ using var mgr = ResourceManager.Instance;
 mgr.Mount(flags.InputPath);
 mgr.Collect();
 
+CreateDirectory(flags.OutputPath);
+
 if (flags.Merged) {
 	foreach (var id in mgr.FHM.Keys) {
-		CreateDirectory(flags.OutputPath);
-
 		using var buf = mgr.ReadFile(id, out var header);
 		if (buf == null) {
 			Log.Error("cannot export {HashId}", id);
@@ -60,17 +59,15 @@ if (flags.Merged) {
 
 if (flags.DumpDPL) {
 	var infoTarget = Path.Combine(flags.OutputPath, "__ULYSSES_DPL_INFO");
-	Directory.CreateDirectory(infoTarget);
+	CreateDirectory(infoTarget);
 	foreach (var dpl in mgr.DPL.Values) {
-		using var stream = new StreamWriter(CreateFile(Path.Combine(infoTarget, dpl.Name + ".csv"), true));
+		using var stream = new StreamWriter(CreateFile(Path.Combine(infoTarget, dpl.Name + ".csv")));
 		stream.NewLine = "\n";
 		stream.WriteLine("id,group_id,name,deleted");
 		foreach (var (_, header) in dpl.FHMTable.Values) {
-			stream.Write($"{header.HashId.Value:x08},");
-			stream.Write($"{header.GroupId:x04},");
-			stream.Write($"{(header.HashId.HasValue ? header.HashId.ToString() : "")},");
-			stream.Write($"{(header.IsDeleted ? "yes" : "no")}");
-			stream.WriteLine();
+			var hashStr = header.HashId.HasValue ? header.HashId.ToString() : string.Empty;
+			var isDeleted = header.IsDeleted ? "yes" : "no";
+			stream.WriteLine($"{header.HashId.Value:x08},{header.GroupId:x04},{hashStr},{isDeleted}");
 		}
 	}
 }
@@ -101,20 +98,30 @@ if (flags.DumpStrings) {
 
 return;
 
-void CreateDirectory(string path) {
-	if (flags.Dry) {
+void CreateDirectory(string path, bool force = false) {
+	if (flags.Dry && !force) {
 		return;
 	}
 
 	Directory.CreateDirectory(path);
 }
 
-Stream CreateFile(string path, bool ovr = false) {
-	if (flags.Dry && !ovr) {
+Stream CreateFile(string path, bool force = false) {
+	if (flags.Dry && !force) {
 		return Stream.Null;
 	}
 
 	return new FileStream(path, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
+}
+
+string GetExtension(ReadOnlySpan<byte> span) {
+	if (span.Length < 4) {
+		return ".bin";
+	}
+
+	var magic = MemoryMarshal.Read<ResourceMagic>(span);
+	var ext = $"{magic.Ext}";
+	return string.IsNullOrEmpty(ext) || ext[0] != '.' ? ".bin" : ext;
 }
 
 void ExtractFHM(IRentedArray<byte> buf, FHMHeader header, string output) {
@@ -126,13 +133,16 @@ void ExtractFHM(IRentedArray<byte> buf, FHMHeader header, string output) {
 
 	if (flags.FHMShape) {
 		var builder = ObjectPool<StringBuilder>.Rent();
-		builder.Clear();
-		builder.AppendLine($"Hash {fhm.ShapeHash():x16}");
-		fhm.DumpShape(builder, 0);
-		using var stream = new StreamWriter(CreateFile(path + ".fhmshape"));
-		stream.Write(builder.ToString());
-		builder.Clear();
-		ObjectPool<StringBuilder>.Return(builder);
+		try {
+			builder.Clear();
+			builder.AppendLine($"Hash {fhm.ShapeHash():x16}");
+			fhm.DumpShape(builder, 0);
+			using var stream = new StreamWriter(CreateFile(path + ".fhmshape"));
+			stream.Write(builder.ToString());
+		} finally {
+			builder.Clear();
+			ObjectPool<StringBuilder>.Return(builder);
+		}
 	}
 
 	if (flags.SaveFHM) {
@@ -161,13 +171,7 @@ void ProcessFHM(FHMFile fhm, string path, string name, bool isRoot) {
 	if (!isRoot && flags.SaveFHMBuffer) {
 		using var fhmBuf = fhm.GetFullBuffer();
 		if (fhmBuf.Length > 0) {
-			var magic = fhmBuf.Length >= 4 ? MemoryMarshal.Read<ResourceMagic>(fhmBuf.Span) : 0;
-			var ext = magic.Ext;
-			if (ext.Length == 0 || ext[0] != '.') {
-				ext = ".bin";
-			}
-
-			var bufPath = $"{path}/{name}{ext}";
+			var bufPath = $"{path}/{name}{GetExtension(fhmBuf.Span)}";
 			var dir = Path.GetDirectoryName(bufPath)!;
 			CreateDirectory(dir);
 			using var stream = CreateFile(bufPath);
@@ -200,12 +204,7 @@ bool ProcessFHMItem(FHMFile fhm, FHMItemHeader itemHeader, string outputPath, st
 		var path = Path.Combine(outputPath, name);
 		var dir = Path.GetDirectoryName(path)!;
 		CreateDirectory(dir);
-		var magic = buf.Length >= 4 ? MemoryMarshal.Read<ResourceMagic>(buf.Span) : 0;
-		var ext = magic.Ext;
-		if (ext.Length == 0 || ext[0] != '.') {
-			ext = ".bin";
-		}
-
+		var ext = GetExtension(buf.Span);
 		Log.Information("Saving {Path}", Path.GetRelativePath(flags.OutputPath, path + ext));
 		using var stream = CreateFile(path + ext);
 		stream.Write(buf.Span);
@@ -248,9 +247,10 @@ bool ProcessResource(FHMFile fhmFile, FHMItemHeader fhmItemHeader, string dplNam
 		CreateDirectory(dir);
 
 		Log.Information("Saving {Path}", resourceName);
-		using var stream = CreateFile(resourcePath);
-		if (resource.Save(stream, resourceIndex)) {
-			continue;
+		using (var stream = CreateFile(resourcePath)) {
+			if (resource.Save(stream, resourceIndex)) {
+				continue;
+			}
 		}
 
 		File.Delete(resourcePath);
