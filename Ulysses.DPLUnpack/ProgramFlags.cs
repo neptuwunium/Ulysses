@@ -14,9 +14,9 @@ public record ProgramFlags : CommandLineFlags {
 	public string OutputPath { get; set; } = null!;
 
 	[Flag("convert", Help = "Whether or not to convert assets if possible")]
-	public bool Convert { get; set; }
+	public bool Convert { get => field || OnlyConvert; set; }
 
-	[Flag("only-convert", Help = "Only convert assets, do not dump raw data. Needs --convert")]
+	[Flag("only-convert", Help = "Only convert assets, do not dump raw data")]
 	public bool OnlyConvert { get; set; }
 
 	[Flag("merged-pac", Help = "Merge PAC files so only the most recent files are saved")]
@@ -26,12 +26,12 @@ public record ProgramFlags : CommandLineFlags {
 	public bool Dry { get; set; }
 
 	[Flag("fhm", Help = "Save the raw FHM file", Hidden = true)]
-	public bool SaveFHM { get; set; }
+	public bool SaveFHM { get => field || OnlyFHM; set; }
 
 	[Flag("fhm-buffer", Help = "Save FHM buffers when they are contiguous", Hidden = true)]
 	public bool SaveFHMBuffer { get; set; }
 
-	[Flag("only-fhm", Help = "Do not process FHM files, only save them. Needs --fhm", Hidden = true)]
+	[Flag("only-fhm", Help = "Do not process FHM files, only save them", Hidden = true)]
 	public bool OnlyFHM { get; set; }
 
 	[Flag("fhm-shape", Help = "Save the FHM shape for debugging", Hidden = true)]
