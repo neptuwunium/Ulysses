@@ -67,7 +67,7 @@ public static class IdRegistry {
 		while (!reader.EndOfStream) {
 			var line = reader.ReadLine()?.Trim();
 
-			if (string.IsNullOrEmpty(line)) {
+			if (string.IsNullOrEmpty(line) || line[0] is '#') {
 				continue;
 			}
 
