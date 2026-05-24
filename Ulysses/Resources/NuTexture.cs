@@ -129,8 +129,17 @@ public class NuTexture : Resource {
 			offset += sizeof(int) * 4; // surf x, surf y, align
 		}
 
+		var globalIndex = (uint) Surfaces.Count;
+
+		// believe it or not, this is what the game does, though it first looks for eXt\0 then GIDX after that.
+		var header32 = MemoryMarshal.Cast<byte, uint>(headerBuffer);
+		var gidx = header32.IndexOf((uint) ResourceMagic.GlobalIndex);
+		if (gidx > -1 && gidx + 2 < header32.Length) {
+			globalIndex = header32[gidx + 2];
+		}
+
 		if (headerBuffer.Length <= offset + 4 * Math.Min(1, (int) info.MipMapCount) || BinaryPrimitives.ReadUInt32BigEndian(headerBuffer[offset..]) == 0x65587400) {
-			Surfaces.Add(new Surface(info, CalculateSurfaceSize(info), dataBuffer, owner));
+			Surfaces.Add(new Surface(info, CalculateSurfaceSize(info), globalIndex, dataBuffer, owner));
 			return;
 		}
 
@@ -142,7 +151,7 @@ public class NuTexture : Resource {
 
 		surfaceSize = surfaceSize.Align(0x80);
 
-		Surfaces.Add(new Surface(info, surfaceSize, dataBuffer, owner));
+		Surfaces.Add(new Surface(info, surfaceSize, globalIndex, dataBuffer, owner));
 	}
 
 	private static int CalculateSurfaceSize(NuTextureSurface info) {
@@ -163,11 +172,13 @@ public class NuTexture : Resource {
 		return format == DXGIFormat.UNKNOWN ? -1 : (int) DDS.CalculateSurfaceSize(info.Width, info.Height, format, info.MipMapCount, out _);
 	}
 
-	public override string? GetResourceName(int resourceIndex, string baseName) => ResourceCount switch {
-		1 => baseName + ".png",
-		> 1 => baseName + $"/{resourceIndex}.png",
-		_ => null,
-	};
+	public override string? GetResourceName(int resourceIndex, string baseName) {
+		if (resourceIndex < 0 || resourceIndex > ResourceCount) {
+			return null;
+		}
+
+		return baseName + $"/{resourceIndex}_{Surfaces[0].GlobalIndex:x08}.png";
+	}
 
 	public override bool Save(Stream stream, int resourceIndex) => resourceIndex <= ResourceCount && SaveSurface(stream, Surfaces[resourceIndex]);
 
@@ -267,7 +278,7 @@ public class NuTexture : Resource {
 		Surfaces = null!;
 	}
 
-	public readonly record struct Surface(NuTextureSurface Info, int SurfaceSize, IRentedArray<byte> DataBuffer, IRentedArray<byte> Owner) : IDisposable {
+	public readonly record struct Surface(NuTextureSurface Info, int SurfaceSize, uint GlobalIndex, IRentedArray<byte> DataBuffer, IRentedArray<byte> Owner) : IDisposable {
 		public void Dispose() {
 			DataBuffer.Dispose();
 			Owner.Dispose();
