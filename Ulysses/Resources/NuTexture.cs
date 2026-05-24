@@ -135,7 +135,7 @@ public class NuTexture : Resource {
 		var header32 = MemoryMarshal.Cast<byte, uint>(headerBuffer);
 		var gidx = header32.IndexOf((uint) ResourceMagic.GlobalIndex);
 		if (gidx > -1 && gidx + 2 < header32.Length) {
-			globalIndex = header32[gidx + 2];
+			globalIndex = BinaryPrimitives.ReverseEndianness(header32[gidx + 2]);
 		}
 
 		if (headerBuffer.Length <= offset + 4 * Math.Min(1, (int) info.MipMapCount) || BinaryPrimitives.ReadUInt32BigEndian(headerBuffer[offset..]) == 0x65587400) {
@@ -177,7 +177,12 @@ public class NuTexture : Resource {
 			return null;
 		}
 
-		return baseName + $"/{resourceIndex}_{Surfaces[0].GlobalIndex:x08}.png";
+		var slash = baseName.IndexOfAny('/', '\\');
+		if (slash > -1) {
+			return $"{baseName}/{Surfaces[0].GlobalIndex:x08}@{resourceIndex}_{baseName[..slash]}.png";
+		}
+
+		return $"{baseName}/{Surfaces[0].GlobalIndex:x08}@{resourceIndex}.png";
 	}
 
 	public override bool Save(Stream stream, int resourceIndex) => resourceIndex <= ResourceCount && SaveSurface(stream, Surfaces[resourceIndex]);
