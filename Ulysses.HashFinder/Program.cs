@@ -120,13 +120,32 @@ void TestLvstHashFormatOuter(string text) {
 void TestDplHashFormat(string text) {
 	TestDplHash("DPL_" + text);
 	TestDplHash("DPL_UI_" + text);
+	TestDplHash("DPL_SHADER_" + text);
+	TestDplHash("DPL_POSTPROCESS_" + text);
+	TestDplHash("DPL_SOUND_" + text);
+	TestDplHash("DPL_SOUNDEFFECT_" + text);
+	TestDplHash("DPL_SOUND_EFFECT_" + text);
+	TestDplHash("DPL_EFFECT_" + text);
+	TestDplHash("DPL_MODEL_" + text);
+	TestDplHash("DPL_M_" + text);
+	TestDplHash("DPL_P_" + text);
+	TestDplHash("DPL_D_" + text);
+	TestDplHash("DPL_ACTOR_" + text);
+	TestDplHash("DPL_TSS_" + text);
+	TestDplHash("DPL_UI_" + text);
 	TestDplHash("DPL_TSS_" + text);
 	TestDplHash("DPL_UI_TSS_" + text);
 	TestDplHash("DPL_MAP_" + text);
 	TestDplHash("DPL_2DIMAGE_" + text);
+	TestDplHash("DPL_SKY_" + text);
+	TestDplHash("DPL_SKYBOX_" + text);
 
 	for (var i = 0; i < 99; ++i) {
 		TestDplHash("DPL_MAP_" + text + $"{i:D2}");
+		TestDplHash("DPL_EVENT_MAP_" + text + $"{i:D2}");
+		TestDplHash("DPL_MAP_EVENT_" + text + $"{i:D2}");
+		TestDplHash("DPL_MAP_SKYBOX_" + text + $"{i:D2}");
+		TestDplHash("DPL_SKYBOX_" + text + $"{i:D2}");
 		TestDplHash("DPL_" + text + $"{i:D2}");
 	}
 
