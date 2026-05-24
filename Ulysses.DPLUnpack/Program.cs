@@ -204,7 +204,7 @@ bool ProcessFHMItem(FHMFile fhm, FHMItemHeader itemHeader, string outputPath, st
 	}
 
 	if (itemHeader.Type == FHMItemType.Normal) {
-		using var buf = fhm.GetItemData(itemHeader);
+		using var buf = fhm[itemHeader];
 		if (buf.Length == 0) {
 			return false;
 		}

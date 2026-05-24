@@ -25,7 +25,7 @@ public class NuTexture : Resource {
 		Surfaces = ObjectPool<List<Surface>>.Rent();
 		Surfaces.Clear();
 
-		using var data = fhm.GetItemData(item);
+		using var data = fhm[item];
 		if (data.Length == 0) {
 			return;
 		}
@@ -80,16 +80,14 @@ public class NuTexture : Resource {
 	};
 
 	private void ProcessGPU(FHMFile fhm, int index, int surfaceIndex) {
-		var itemHeader = fhm.GetItemDataHeader(index);
-		using var surfaceBuf = fhm.GetItemData(itemHeader);
+		using var surfaceBuf = fhm[index];
 		if (surfaceBuf.Length == 0) {
 			return;
 		}
 
 		var bufSpan = surfaceBuf.Span;
 		var surfaceHeader = MemoryMarshal.Read<NuTextureSurface>(bufSpan).ReverseEndianness();
-		itemHeader = fhm.GetItemDataHeader(surfaceIndex);
-		var dataBuffer = fhm.GetItemData(itemHeader);
+		var dataBuffer = fhm[surfaceIndex];
 		if (dataBuffer.Length == 0) {
 			dataBuffer.Dispose();
 			return;
@@ -99,8 +97,7 @@ public class NuTexture : Resource {
 	}
 
 	private void ProcessRAM(FHMFile fhm, int index) {
-		var itemHeader = fhm.GetItemDataHeader(index);
-		var surfaceBuf = fhm.GetItemData(itemHeader);
+		var surfaceBuf = fhm[index];
 		if (surfaceBuf.Length == 0) {
 			surfaceBuf.Dispose();
 			return;

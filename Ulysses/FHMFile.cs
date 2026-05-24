@@ -29,6 +29,12 @@ public sealed class FHMFile : IDisposable {
 	public int Offset { get; set; }
 	public IRentedArray<byte> Buffer { get; set; }
 
+	public bool IsDataOnly => ItemHeaders.All(x => x.Type == FHMItemType.Normal);
+
+	public IRentedArray<byte> this[int index] => index >= Count ? RentedArray<byte>.Empty : GetItemData(index);
+	public IRentedArray<byte> this[FHMItemHeader header] => GetItemData(header);
+	public IRentedArray<byte> this[FHMItemDataHeader header] => GetItemData(header);
+
 	public IEnumerable<FHMItemHeader> ItemHeaders {
 		get {
 			for (var i = 0; i < Count; ++i) {
@@ -56,10 +62,11 @@ public sealed class FHMFile : IDisposable {
 		return -1;
 	}
 
-	public FHMItemHeader GetItemHeader(int index) => index >= Count ? default : MemoryMarshal.Read<FHMItemHeader>(Buffer.Span[(Offset + 4 + index * Unsafe.SizeOf<FHMItemHeader>())..]).ReverseEndianness();
+	public FHMItemHeader GetItemHeader(Index index) => GetItemHeader(index.IsFromEnd ? Count - index.Value : index.Value);
+	public FHMItemHeader GetItemHeader(int index) => index >= Count || index < 0 ? default : MemoryMarshal.Read<FHMItemHeader>(Buffer.Span[(Offset + 4 + index * Unsafe.SizeOf<FHMItemHeader>())..]).ReverseEndianness();
 
-	public FHMItemDataHeader GetItemDataHeader(int index) => index >= Count ? default : GetItemDataHeader(GetItemHeader(index));
-
+	public FHMItemDataHeader GetItemDataHeader(Index index) => GetItemDataHeader(index.IsFromEnd ? Count - index.Value : index.Value);
+	public FHMItemDataHeader GetItemDataHeader(int index) => index >= Count || index < 0 ? default : GetItemDataHeader(GetItemHeader(index));
 	public FHMItemDataHeader GetItemDataHeader(FHMItemHeader item) => item.Type != FHMItemType.Normal ? default : MemoryMarshal.Read<FHMItemDataHeader>(Buffer.Span[(Offset + item.Offset)..]).ReverseEndianness();
 
 	public IRentedArray<byte> GetFullBuffer() {
@@ -95,11 +102,13 @@ public sealed class FHMFile : IDisposable {
 		return new UnownedRentedArray<byte>(Buffer, offset, size);
 	}
 
-	public IRentedArray<byte> GetItemData(int index) => index >= Count ? RentedArray<byte>.Empty : GetItemData(GetItemDataHeader(index));
+	public IRentedArray<byte> GetItemData(Index index) => GetItemData(index.IsFromEnd ? Count - index.Value : index.Value);
+	public IRentedArray<byte> GetItemData(int index) => index >= Count || index < 0 ? RentedArray<byte>.Empty : GetItemData(GetItemDataHeader(index));
 	public IRentedArray<byte> GetItemData(FHMItemHeader item) => GetItemData(GetItemDataHeader(item));
 	public IRentedArray<byte> GetItemData(FHMItemDataHeader dataItem) => dataItem.Size == 0 ? RentedArray<byte>.Empty : new UnownedRentedArray<byte>(Buffer, dataItem.Offset, dataItem.Size);
 
-	public FHMFile? GetChildItem(int index) => index >= Count ? null : GetChildItem(GetItemHeader(index));
+	public FHMFile? GetChildItem(Index index) => GetChildItem(index.IsFromEnd ? Count - index.Value : index.Value);
+	public FHMFile? GetChildItem(int index) => index >= Count || index < 0 ? null : GetChildItem(GetItemHeader(index));
 	public FHMFile? GetChildItem(FHMItemHeader item) => item.Type != FHMItemType.Child && item.Offset > 0 ? null : new FHMFile(Buffer, Offset + item.Offset, Header);
 
 	public ulong ShapeHash() {
@@ -114,7 +123,7 @@ public sealed class FHMFile : IDisposable {
 		crc.Update(MemoryMarshal.AsBytes(new ReadOnlySpan<uint>(ref value)));
 		foreach (var item in ItemHeaders) {
 			if (item.Type == FHMItemType.Normal) {
-				using var header = GetItemData(item);
+				using var header = this[item];
 				value = header.Length >= 4 ? MemoryMarshal.Read<uint>(header.Span) : uint.MaxValue;
 				crc.Update(MemoryMarshal.AsBytes(new ReadOnlySpan<uint>(ref value)));
 			} else {
@@ -135,7 +144,7 @@ public sealed class FHMFile : IDisposable {
 		var index = 0;
 		foreach (var item in ItemHeaders) {
 			if (item.Type == FHMItemType.Normal) {
-				using var header = GetItemData(item);
+				using var header = this[item];
 				builder.AppendLine($"{indent}\t{(header.Length >= 4 ? MemoryMarshal.Read<ResourceMagic>(header.Span).ToString() : "NULL")}\t{index++:x4}\t{header.Length:x8}");
 			} else {
 				using var child = GetChildItem(item);
@@ -149,7 +158,7 @@ public sealed class FHMFile : IDisposable {
 	}
 
 	public bool CheckMagic(int index, ResourceMagic magic) {
-		using var buf = GetItemData(index);
+		using var buf = this[index];
 		if (buf.Length < 4) {
 			return false;
 		}

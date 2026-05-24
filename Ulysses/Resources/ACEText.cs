@@ -10,7 +10,7 @@ namespace Ulysses.Resources;
 
 public class ACEText : Resource {
 	public ACEText(FHMFile fhm, FHMItemHeader item, string name, bool leaveOpen = false) : base(fhm, name, leaveOpen) {
-		if (fhm.GetItemData(item) is not { Length: > 0 } data) {
+		if (fhm[item] is not { Length: > 0 } data) {
 			return;
 		}
 
