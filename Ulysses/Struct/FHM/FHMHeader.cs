@@ -15,10 +15,10 @@ public partial record struct FHMHeader {
 	public int MemorySize { get; set; }
 	public int CPUMemorySize { get; set; }
 	public int GPUMemorySize { get; set; }
-	public int RAMMemorySize { get; set; }
+	public int SharedMemorySize { get; set; }
 	public int CPUAlignment { get; set; }
 	public int GPUAlignment { get; set; }
-	public int RAMAlignment { get; set; }
+	public int SharedAlignment { get; set; }
 	public long Offset { get; set; }
 	public int DiskSize { get; set; }
 	public uint GroupId { get; set; }

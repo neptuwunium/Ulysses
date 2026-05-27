@@ -118,12 +118,12 @@ public abstract class Resource : IDisposable {
 			case ResourceMagic.NuTexturePS3 when index == 0:
 				instance = new NuTexture(fhm, item, 0, name, leaveOpen);
 				return true;
-			// case ResourceMagic.UITexture:
-			//	instance = new UITexture(fhm, fhmItem, name, leaveOpen);
-			// 	return true;
-			case ResourceMagic.UIImage:
-				instance = new UI2DImage(fhm, item, name, leaveOpen);
-				return true;
+			case ResourceMagic.UITexture:
+				instance = new UITexture(fhm, item, name, leaveOpen);
+			 	return true;
+			// case ResourceMagic.UIImage:
+			//	instance = new UI2DImage(fhm, item, name, leaveOpen);
+			//	return true;
 			case ResourceMagic.UIFont:
 				instance = new UIFont(fhm, item, name, leaveOpen);
 				return true;

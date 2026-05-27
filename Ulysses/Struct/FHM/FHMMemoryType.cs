@@ -7,5 +7,5 @@ namespace Ulysses.Struct.FHM;
 public enum FHMMemoryType : ushort {
 	CPU,
 	GPU,
-	RAM,
+	Shared,
 }

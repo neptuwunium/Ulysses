@@ -14,7 +14,10 @@ SPDX-License-Identifier: EUPL-1.2
 	<s:String x:Key="/Default/CodeStyle/Naming/CSharpNaming/Abbreviations/=LVS/@EntryIndexedValue">LVS</s:String>
 	<s:String x:Key="/Default/CodeStyle/Naming/CSharpNaming/Abbreviations/=LVST/@EntryIndexedValue">LVST</s:String>
 	<s:String x:Key="/Default/CodeStyle/Naming/CSharpNaming/Abbreviations/=MAGE/@EntryIndexedValue">MAGE</s:String>
+	<s:String x:Key="/Default/CodeStyle/Naming/CSharpNaming/Abbreviations/=NUT/@EntryIndexedValue">NUT</s:String>
+	<s:String x:Key="/Default/CodeStyle/Naming/CSharpNaming/Abbreviations/=PNG/@EntryIndexedValue">PNG</s:String>
 	<s:String x:Key="/Default/CodeStyle/Naming/CSharpNaming/Abbreviations/=UI/@EntryIndexedValue">UI</s:String>
+	<s:String x:Key="/Default/CodeStyle/Naming/CSharpNaming/Abbreviations/=UITX/@EntryIndexedValue">UITX</s:String>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=ACEA/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=dimage/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=embl/@EntryIndexedValue">True</s:Boolean>

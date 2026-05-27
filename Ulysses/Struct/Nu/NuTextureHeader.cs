@@ -9,7 +9,7 @@ namespace Ulysses.Struct.Nu;
 
 [EndianSwappable, StructLayout(LayoutKind.Sequential, Pack = 4)]
 public partial record struct NuTextureHeader {
-	public ResourceMagic Magic { get; set; }
+	[DoNotSwap] public ResourceMagic Magic { get; set; }
 	public byte Version { get; set; }
 	public byte Platform { get; set; }
 	public ushort SurfaceCount { get; set; }

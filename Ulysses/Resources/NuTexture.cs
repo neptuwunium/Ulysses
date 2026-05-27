@@ -72,9 +72,9 @@ public class NuTexture : Resource {
 	public List<Surface> Surfaces { get; private set; }
 	public override int ResourceCount => Surfaces.Count;
 
-	private static PNGEncoder Encoder { get; } = new(PNGCompressionLevel.Small);
+	internal static PNGEncoder PNGEncoder { get; } = new(PNGCompressionLevel.Small);
 
-	private static EncoderWriteOptions EncoderOptions { get; } = new() {
+	internal static EncoderWriteOptions PNGEncoderOptions { get; } = new() {
 		Compress = true,
 		AssociateAlpha = false,
 	};
@@ -184,39 +184,49 @@ public class NuTexture : Resource {
 
 	public override bool Save(Stream stream, int resourceIndex) => resourceIndex <= ResourceCount && SaveSurface(stream, Surfaces[resourceIndex]);
 
-	public static bool SaveSurface(Stream stream, Surface surface) {
-		// there's a whole palette thing but the game just sets the pointer to 0xacea.
-		var buffer = surface.DataBuffer;
-		if ((surface.Info.Caps2 & DDSCaps2.Cubemap) != 0) {
-			if (surface.SurfaceSize == -1) {
-				return false;
-			}
-
-			using var collection = new ImageCollection();
-			var offset = 0;
-			for (var i = 0; i < 6; ++i) {
-				var image = DecompressSurface(surface.Info, new UnownedRentedArray<byte>(buffer, offset));
-				if (image == null) {
-					return false;
-				}
-
-				collection.Add(image);
-				offset += surface.SurfaceSize;
-			}
-
-			using var ibl = new IBLImage(collection, CubemapOrder.DXGIOrder);
-			using var equirect = ibl.ToEquirectangular();
-			Encoder.Write(stream, EncoderOptions, equirect);
-		} else {
-			using var image = DecompressSurface(surface.Info, buffer);
-			if (image == null) {
-				return false;
-			}
-
-			Encoder.Write(stream, EncoderOptions, image);
+	public bool SaveSurface(Stream stream, Surface surface) {
+		using var image = DecompressSurface(surface);
+		if (image == null) {
+			return false;
 		}
 
+		PNGEncoder.Write(stream, PNGEncoderOptions, image);
 		return true;
+	}
+
+	public IImageBuffer? DecompressSurface(Surface surface) {
+		// there's a whole palette thing but the game just sets the pointer to 0xacea.
+		var buffer = surface.DataBuffer;
+		if (buffer.Length == 0) {
+			return null;
+		}
+
+		if ((surface.Info.Caps2 & DDSCaps2.Cubemap) == 0) {
+			return DecompressSurface(surface.Info, buffer);
+		}
+
+		if (surface.SurfaceSize == -1) {
+			return null;
+		}
+
+		using var collection = new ImageCollection();
+		var offset = 0;
+		for (var i = 0; i < 6; ++i) {
+			if (offset >= buffer.Length) {
+				return null;
+			}
+
+			var image = DecompressSurface(surface.Info, new UnownedRentedArray<byte>(buffer, offset));
+			if (image == null) {
+				return null;
+			}
+
+			collection.Add(image);
+			offset += surface.SurfaceSize;
+		}
+
+		using var ibl = new IBLImage(collection, CubemapOrder.DXGIOrder);
+		return ibl.ToEquirectangular();
 	}
 
 	private static IImageBuffer? DecompressSurface(NuTextureSurface info, IRentedArray<byte> buffer) {
