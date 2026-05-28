@@ -20,8 +20,13 @@ SPDX-License-Identifier: EUPL-1.2
                  BackgroundTransitionsEnabled="True"
                  ShowTitlebarBackground="True"
                  ShowBottomBorder="True"
+                 Icon="Resources/icon.ico"
+                 ShowInTaskbar="True"
                  DataContext="{Binding RelativeSource={RelativeSource Self}}"
                  Title="Nimbus">
+	<suki:SukiWindow.LogoContent>
+		<Image Source="Resources/icon.ico" Width="32" Height="32"/>
+	</suki:SukiWindow.LogoContent>
 	<suki:SukiWindow.MenuItems>
 		<MenuItem Header="Open" Click="LoadGame" IsEnabled="{Binding AllowButtons}" />
 		<MenuItem Header="Extract" Click="ExtractGame" IsEnabled="{Binding AllowButtons}" />
