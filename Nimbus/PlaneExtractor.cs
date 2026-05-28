@@ -5,6 +5,8 @@
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
+using Metsys.Bson;
+using Pluto;
 using Pluto.Extensions;
 using Pluto.IO.Binary;
 using Ulysses;
@@ -36,6 +38,31 @@ public static class PlaneExtractor {
 		}
 
 		SaveFHM(fhm, path);
+		SavePaint(fhm, path);
+	}
+
+	private static void SavePaint(FHMFile fhm, string path) {
+		var child = fhm.GetChildItem(0);
+		var materialSet = child?.GetChildItem(1);
+		if (!(materialSet?.Count > 3)) {
+			return;
+		}
+
+		var paintBin = materialSet[^2];
+		if (paintBin.Length != 0x180) {
+			return;
+		}
+
+		var color = MemoryMarshal.Cast<byte, float>(paintBin.Span);
+		color.ReverseEndianness();
+
+		Directory.CreateDirectory(path);
+		using var stream = new FileStream(Path.Combine(path, "paint.txt"), FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
+		using var writer = new StreamWriter(stream);
+		writer.NewLine = "\n";
+		for (var i = 0; i < color.Length; i += 4) {
+			writer.WriteLine($"{color[i + 0]}, {color[i + 1]}, {color[i + 2]}, {color[i + 3]}");
+		}
 	}
 
 	public static void SavePlane(FHMFile fhm, string path) {
