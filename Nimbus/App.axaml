@@ -1,0 +1,22 @@
+<!--
+SPDX-FileCopyrightText: 2026 Neptuwunium
+
+SPDX-License-Identifier: EUPL-1.2
+-->
+
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:suki="https://github.com/kikipoulet/SukiUI"
+             xmlns:mia="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:converters="clr-namespace:Nimbus.Converters"
+             x:Class="Nimbus.App"
+             RequestedThemeVariant="Default">
+	<Application.Resources>
+		<converters:InvertBooleanConverter x:Key="InvertBoolean" />
+	</Application.Resources>
+	<Application.Styles>
+		<FluentTheme />
+		<suki:SukiTheme Locale="en-US" ThemeColor="Blue" />
+		<mia:MaterialIconStyles />
+	</Application.Styles>
+</Application>

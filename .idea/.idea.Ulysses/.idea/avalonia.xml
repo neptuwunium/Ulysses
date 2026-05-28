@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AvaloniaProject">
+    <option name="projectPerEditor">
+      <map>
+        <entry key="Nimbus/App.axaml" value="Nimbus/Nimbus.csproj" />
+        <entry key="Nimbus/MainWindow.axaml" value="Nimbus/Nimbus.csproj" />
+        <entry key="Ulysses.Extractor/App.axaml" value="Ulysses.Extractor/Ulysses.Extractor.csproj" />
+        <entry key="Ulysses.Extractor/Components/PlaneItem.axaml" value="Ulysses.Extractor/Ulysses.Extractor.csproj" />
+        <entry key="Ulysses.Extractor/MainWindow.axaml" value="Ulysses.Extractor/Ulysses.Extractor.csproj" />
+        <entry key="Ulysses.Extractor/Theme.axaml" value="Ulysses.Extractor/Ulysses.Extractor.csproj" />
+      </map>
+    </option>
+  </component>
+</project>

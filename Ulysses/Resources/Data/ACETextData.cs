@@ -133,11 +133,9 @@ public sealed class ACETextData : IDisposable {
 		return GetStringForLanguage(text, languageIndex);
 	}
 
-	public string? GetStringForLanguage(HashId id, string language) {
-		if (!Languages.TryGetValue(language, out var languageIndex)) {
-			return null;
-		}
+	public string? GetStringForLanguage(HashId id, int languageIndex) =>
+		Hashes.TryGetValue(id, out var hashInfo) ? GetStringForLanguage(hashInfo.Index, languageIndex) : null;
 
-		return Hashes.TryGetValue(id, out var hashInfo) ? GetStringForLanguage(hashInfo.Index, languageIndex) : null;
-	}
+	public string? GetStringForLanguage(HashId id, string language) =>
+		!Languages.TryGetValue(language, out var languageIndex) ? null : GetStringForLanguage(id, languageIndex);
 }

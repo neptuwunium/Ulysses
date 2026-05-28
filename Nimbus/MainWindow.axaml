@@ -1,0 +1,70 @@
+<!--
+SPDX-FileCopyrightText: 2026 Neptuwunium
+
+SPDX-License-Identifier: EUPL-1.2
+-->
+
+<suki:SukiWindow xmlns="https://github.com/avaloniaui"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                 xmlns:suki="https://github.com/kikipoulet/SukiUI"
+                 mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+                 x:Class="Nimbus.MainWindow"
+                 CanFullScreen="True"
+                 CanMinimize="True"
+                 CanMove="True"
+                 CanPin="True"
+                 CanResize="True"
+                 IsMenuVisible="True"
+                 BackgroundTransitionsEnabled="True"
+                 ShowTitlebarBackground="True"
+                 ShowBottomBorder="True"
+                 DataContext="{Binding RelativeSource={RelativeSource Self}}"
+                 Title="Nimbus">
+	<suki:SukiWindow.MenuItems>
+		<MenuItem Header="Open" Click="LoadGame" IsEnabled="{Binding AllowButtons}" />
+		<MenuItem Header="Extract" Click="ExtractGame" IsEnabled="{Binding AllowButtons}" />
+		<MenuItem Header="Options" IsEnabled="{Binding AllowButtons}">
+			<MenuItem Header="Image Format" StaysOpenOnClick="True">
+				<MenuItem Header="PNG" IsChecked="{Binding PNGSelected}" IsEnabled="{Binding PNGSupported}" StaysOpenOnClick="True"
+				          ToggleType="Radio" />
+				<MenuItem Header="TIFF" IsChecked="{Binding TIFFSelected}" IsEnabled="{Binding TIFFSupported}"
+				          StaysOpenOnClick="True" ToggleType="Radio" />
+				<MenuItem Header="DDS" IsChecked="{Binding DDSSelected}" StaysOpenOnClick="True" ToggleType="Radio" />
+			</MenuItem>
+		</MenuItem>
+		<MenuItem Header="{Binding Status}" IsEnabled="False" HorizontalAlignment="Stretch" />
+	</suki:SukiWindow.MenuItems>
+	<Grid RowDefinitions="*">
+		<TabControl Grid.Row="0">
+			<TabItem Header="Planes">
+				<DataGrid
+					SelectionMode="Single"
+					ItemsSource="{Binding Planes.Values, FallbackValue={Binding EmptyPlanes}}"
+					IsReadOnly="{Binding AllowButtons, Converter={StaticResource InvertBoolean}}"
+					AutoGenerateColumns="False">
+					<DataGrid.Columns>
+						<DataGridCheckBoxColumn IsReadOnly="False" Width="115" Binding="{Binding Extract}">
+							<DataGridCheckBoxColumn.Header>
+								<CheckBox HorizontalAlignment="Center"
+								          Padding="0"
+								          MinWidth="0"
+								          Margin="41, 0, 0 , 0"
+								          IsEnabled="{Binding AllowButtons}"
+								          IsCheckedChanged="ToggleAll" /> <!-- what is this shit -->
+							</DataGridCheckBoxColumn.Header>
+						</DataGridCheckBoxColumn>
+						<DataGridTextColumn IsReadOnly="True" Header="Name" Binding="{Binding FriendlyName}" />
+						<DataGridTextColumn IsReadOnly="True" Header="Base Plane" Binding="{Binding FriendlyBaseName}" />
+						<DataGridTextColumn IsReadOnly="True" Header="Category" Binding="{Binding Category}" />
+						<DataGridTextColumn IsReadOnly="True" Header="Rarity" Binding="{Binding Rarity}" />
+						<DataGridTextColumn IsReadOnly="True" Header="Armament 1" Binding="{Binding Arms1}" />
+						<DataGridTextColumn IsReadOnly="True" Header="Armament 2" Binding="{Binding Arms2}" />
+						<DataGridTextColumn IsReadOnly="True" Header="Armament 3" Binding="{Binding Arms3}" />
+					</DataGrid.Columns>
+				</DataGrid>
+			</TabItem>
+		</TabControl>
+	</Grid>
+</suki:SukiWindow>

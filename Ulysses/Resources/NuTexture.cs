@@ -21,6 +21,16 @@ using Ulysses.Struct.Nu;
 namespace Ulysses.Resources;
 
 public class NuTexture : Resource {
+	static NuTexture() {
+		EncoderOptions = new EncoderWriteOptions {
+			Compress = true,
+			AssociateAlpha = false,
+		};
+		PNGEncoder = new PNGEncoder(PNGCompressionLevel.Small);
+		TIFFEncoder = new TIFFEncoder(TIFFCompression.LZW, TIFFCompression.LZW);
+		ExportFormat = NuExportFormat.PNG;
+	}
+
 	public NuTexture(FHMFile fhm, FHMItemHeader item, int fhmIndex, string name, bool leaveOpen = false) : base(fhm, name, leaveOpen) {
 		Surfaces = ObjectPool<List<Surface>>.Rent();
 		Surfaces.Clear();
@@ -72,12 +82,21 @@ public class NuTexture : Resource {
 	public List<Surface> Surfaces { get; private set; }
 	public override int ResourceCount => Surfaces.Count;
 
-	internal static PNGEncoder PNGEncoder { get; } = new(PNGCompressionLevel.Small);
+	public static NuExportFormat ExportFormat {
+		get;
+		set {
+			if ((value == NuExportFormat.PNG && !PNGEncoder.IsAvailable) ||
+				(value == NuExportFormat.TIFF && !TIFFEncoder.IsAvailable)) {
+				field = NuExportFormat.DDS;
+			} else {
+				field = value;
+			}
+		}
+	}
 
-	internal static EncoderWriteOptions PNGEncoderOptions { get; } = new() {
-		Compress = true,
-		AssociateAlpha = false,
-	};
+	internal static PNGEncoder PNGEncoder { get; }
+	internal static EncoderWriteOptions EncoderOptions { get; }
+	internal static TIFFEncoder TIFFEncoder { get; }
 
 	private void ProcessGPU(FHMFile fhm, int index, int surfaceIndex) {
 		using var surfaceBuf = fhm[index];
@@ -174,23 +193,49 @@ public class NuTexture : Resource {
 			return null;
 		}
 
-		var slash = baseName.IndexOfAny('/', '\\');
-		if (slash > -1) {
-			return $"{baseName}/{Surfaces[0].GlobalIndex:x08}@{resourceIndex}_{baseName[..slash]}.png";
-		}
-
-		return $"{baseName}/{Surfaces[0].GlobalIndex:x08}@{resourceIndex}.png";
+		return $"{baseName}/{Surfaces[0].GlobalIndex:x08}@{resourceIndex}.{ExportFormat.ToString().ToLower()}";
 	}
 
 	public override bool Save(Stream stream, int resourceIndex) => resourceIndex <= ResourceCount && SaveSurface(stream, Surfaces[resourceIndex]);
 
 	public bool SaveSurface(Stream stream, Surface surface) {
+		if (ExportFormat == NuExportFormat.DDS) {
+			var header = new DDSHeader {
+				Flags = DDSFlags.Caps | DDSFlags.Height | DDSFlags.Width | DDSFlags.PixelFormat | DDSFlags.MipmapCount,
+				Caps1 = DDSCaps1.Texture | DDSCaps1.Mipmap | surface.Info.Caps1,
+				Caps2 = surface.Info.Caps2,
+				MipMapCount = surface.Info.MipMapCount,
+				PixelFormat = surface.Info.PixelFormat.PixelFormat,
+				Width = surface.Info.Width,
+				Height = surface.Info.Height,
+				Magic = 0x20534444,
+				Size = 0x7c,
+			};
+			stream.Write(MemoryMarshal.AsBytes(new Span<DDSHeader>(ref header)));
+			stream.Write(surface.DataBuffer.Span);
+			return true;
+		}
+
 		using var image = DecompressSurface(surface);
+		return SaveImage(stream, image, ExportFormat);
+	}
+
+	public static bool SaveImage(Stream stream, IImageBuffer? image, NuExportFormat format) {
 		if (image == null) {
 			return false;
 		}
 
-		PNGEncoder.Write(stream, PNGEncoderOptions, image);
+		switch (format) {
+			case NuExportFormat.PNG when PNGEncoder.IsAvailable:
+				PNGEncoder.Write(stream, EncoderOptions, [image]);
+				break;
+			case NuExportFormat.TIFF when TIFFEncoder.IsAvailable:
+				TIFFEncoder.Write(stream, EncoderOptions, [image]);
+				break;
+			default:
+				return false;
+		}
+
 		return true;
 	}
 

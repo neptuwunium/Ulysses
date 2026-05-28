@@ -17,4 +17,5 @@ public partial struct HashId {
 	public string DebugString => GetDebugString("Hash");
 	public bool HasValue => IdRegistry.Lookup.ContainsKey(Value);
 	public string GetDebugString(string prefix) => $"{IdRegistry.Lookup.GetValueOrDefault(Value, prefix)}::[0x{Value:x08}]";
+	public static implicit operator HashId(string str) => new(str);
 }

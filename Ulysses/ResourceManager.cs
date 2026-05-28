@@ -31,6 +31,11 @@ public sealed class ResourceManager : IDisposable {
 	public Dictionary<HashId, HashId> FHM { get; }
 
 	public void Dispose() {
+		Unmount();
+		Instance = null!;
+	}
+
+	public void Unmount() {
 		foreach (var dpl in DPL.Values) {
 			dpl.Dispose();
 		}
@@ -39,8 +44,6 @@ public sealed class ResourceManager : IDisposable {
 		FHM.Clear();
 		ObjectPool<Dictionary<HashId, DPLFile>>.Return(DPL);
 		ObjectPool<Dictionary<HashId, HashId>>.Return(FHM);
-
-		Instance = null!;
 	}
 
 	public void Mount(string path) {
@@ -52,7 +55,7 @@ public sealed class ResourceManager : IDisposable {
 
 			var dpl = new DPLFile(pacPath, priority);
 			Log.Information("Mounted DPL {DPLName} (Version {Version}, Build Date {Build})", dpl.Name, dpl.Header.ACE.Version, dpl.Header.ACE.Date);
-			DPL.Add(new HashId(dpl.Name), dpl);
+			DPL.Add(dpl.Name, dpl);
 		}
 	}
 
@@ -77,4 +80,7 @@ public sealed class ResourceManager : IDisposable {
 
 		return DPL[dplId].ReadFile(id);
 	}
+
+	public FHMFile? ReadFile(HashId id) =>
+		ReadFile(id, out var header) is not { } buf ? null : new FHMFile(buf, 0, header);
 }

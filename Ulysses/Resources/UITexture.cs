@@ -9,6 +9,7 @@ using Pluto.Maths;
 using Triton;
 using Triton.Pixel.Formats;
 using Ulysses.Struct.FHM;
+using Ulysses.Struct.Nu;
 using Ulysses.Struct.UI;
 
 namespace Ulysses.Resources;
@@ -32,7 +33,7 @@ public class UITexture : Resource {
 
 		reader.Position = header.VariableOffset;
 
-		if(header.VariableCount > 0) {
+		if (header.VariableCount > 0) {
 			var buf = (stackalloc UITXVariableTexture[header.VariableCount]);
 			reader.Read(buf);
 			buf.ReverseEndianness();
@@ -40,7 +41,7 @@ public class UITexture : Resource {
 		}
 
 		reader.Position = header.TextureOffset;
-		if(header.TextureCount > 0) {
+		if (header.TextureCount > 0) {
 			NuContainerFHM = fhm.GetChildItem(1);
 			NuTextureFHM = NuContainerFHM?.GetChildItem(0);
 
@@ -48,9 +49,9 @@ public class UITexture : Resource {
 				return;
 			}
 
-			NuTexture = new NuTexture(NuTextureFHM, NuTextureFHM.GetItemHeader(0), 0, name, true);
-			foreach (var surface in NuTexture.Surfaces) {
-				CropHosts.Add(NuTexture.DecompressSurface(surface));
+			NuTextureData = new NuTexture(NuTextureFHM, NuTextureFHM.GetItemHeader(0), 0, name, true);
+			foreach (var surface in NuTextureData.Surfaces) {
+				CropHosts.Add(NuTextureData.DecompressSurface(surface));
 			}
 
 			var buf = (stackalloc UITXTexture[header.TextureCount]);
@@ -63,7 +64,7 @@ public class UITexture : Resource {
 	public override int ResourceCount => Textures.Count;
 	public FHMFile? NuContainerFHM { get; set; }
 	public FHMFile? NuTextureFHM { get; set; }
-	public NuTexture? NuTexture { get; set; }
+	public NuTexture? NuTextureData { get; set; }
 	public List<IImageBuffer?> CropHosts { get; set; }
 	public List<UITXTexture> Textures { get; set; }
 	public List<UITXVariableTexture> VariableTextures { get; set; }
@@ -73,7 +74,7 @@ public class UITexture : Resource {
 			return null;
 		}
 
-		return $"{baseName}/{resourceIndex}.png";
+		return $"{baseName}/{resourceIndex}.{NuTexture.ExportFormat.ToString().ToLower()}";
 	}
 
 
@@ -94,7 +95,7 @@ public class UITexture : Resource {
 
 		using var image = new ImageBuffer<ColorRGBA<byte>, byte>(texture.Size.X, texture.Size.Y);
 		image.Draw(host, Point<int>.Zero, new Rect<int>(texture.TopLeft.X, texture.TopLeft.Y, texture.Size.X, texture.Size.Y));
-		NuTexture.PNGEncoder.Write(stream, NuTexture.PNGEncoderOptions, image);
+		NuTexture.SaveImage(stream, image, NuExportFormat.PNG);
 		return true;
 	}
 
@@ -103,7 +104,7 @@ public class UITexture : Resource {
 			buffer?.Dispose();
 		}
 
-		NuTexture?.Dispose();
+		NuTextureData?.Dispose();
 		NuTextureFHM?.Dispose();
 		NuContainerFHM?.Dispose();
 
