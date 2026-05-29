@@ -60,8 +60,25 @@ public static class PlaneExtractor {
 		using var stream = new FileStream(Path.Combine(path, "paint.txt"), FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
 		using var writer = new StreamWriter(stream);
 		writer.NewLine = "\n";
+
+		writer.WriteLine("[ R, G, B, A ]");
+
 		for (var i = 0; i < color.Length; i += 4) {
-			writer.WriteLine($"{color[i + 0]}, {color[i + 1]}, {color[i + 2]}, {color[i + 3]}");
+			writer.WriteLine($"[ {color[i + 0]}, {color[i + 1]}, {color[i + 2]}, {color[i + 3]} ]");
+		}
+
+		writer.WriteLine();
+		writer.WriteLine("RGB (Hex)");
+
+		for (var i = 0; i < color.Length; i += 4) {
+			writer.WriteLine($"{(byte)(color[i + 0] * 255):X02}{(byte)(color[i + 1] * 255):X02}{(byte)(color[i + 2] * 255):X02}");
+		}
+
+		writer.WriteLine();
+		writer.WriteLine("RGBA (Hex)");
+
+		for (var i = 0; i < color.Length; i += 4) {
+			writer.WriteLine($"{(byte)(color[i + 0] * 255):X02}{(byte)(color[i + 1] * 255):X02}{(byte)(color[i + 2] * 255):X02}{(byte)(color[i + 3] * 255):X02}");
 		}
 	}
 
