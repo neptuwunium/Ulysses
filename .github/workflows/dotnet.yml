@@ -23,9 +23,9 @@ jobs:
             -   run: dotnet publish Nimbus -c Release -o ${{ github.workspace }}/Publish/Nimbus-Standalone/${{matrix.rid}} -f net11.0 -r ${{ matrix.rid }} --sc
             -   uses: actions/upload-artifact@v4
                 with:
-                    name: Nimbus-${{ matrix.rid }}
-                    path: Publish/Nimbus-Runtime/${{matrix.rid}}
+                    name: Nimbus-${{github.ref_name}}-${{ matrix.rid }}
+                    path: Publish/Nimbus/${{matrix.rid}}
             -   uses: actions/upload-artifact@v4
                 with:
-                    name: Nimbus-${{ matrix.rid }}-Standalone
+                    name: Nimbus-${{github.ref_name}}-${{ matrix.rid }}-Standalone
                     path: Publish/Nimbus-Standalone/${{matrix.rid}}
