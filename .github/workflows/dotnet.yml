@@ -3,7 +3,10 @@
 # SPDX-License-Identifier: EUPL-1.2
 
 name: Build
-on: [ push ]
+on:
+    push:
+        tags:
+            - 'v*'
 jobs:
     build:
         name: "Build [${{ matrix.rid }}]"
