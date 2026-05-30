@@ -23,9 +23,11 @@ public class MAGEActor : ACEActor {
 		[field: MarshalAs(UnmanagedType.I1)] public bool DataIsBigEndian { get; set; }
 		public int TableOffset { get; set; }
 		public int Count { get; set; }
+
 		// ReSharper disable once PropertyCanBeMadeInitOnly.Local
 		public int Alignment { get; set; }
 		public int Type { get; set; }
+
 		public uint Game { get; set; }
 		// int NameLength
 		// char Name[NameLength]
@@ -56,7 +58,7 @@ public class MAGEActor : ACEActor {
 		writer.Write(offsetPairs);
 		writer.Align(header.Alignment);
 
-		for(var index = 0; index <  FHM.Count; index++) {
+		for (var index = 0; index < FHM.Count; index++) {
 			using var buffer = FHM[index];
 			offsetPairs[index] = (writer.Position, buffer.Length);
 			writer.WriteBytes(buffer);

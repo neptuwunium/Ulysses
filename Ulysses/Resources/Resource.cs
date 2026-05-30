@@ -120,7 +120,7 @@ public abstract class Resource : IDisposable {
 				return true;
 			case ResourceMagic.UITexture:
 				instance = new UITexture(fhm, item, name, leaveOpen);
-			 	return true;
+				return true;
 			// case ResourceMagic.UIImage:
 			//	instance = new UI2DImage(fhm, item, name, leaveOpen);
 			//	return true;
