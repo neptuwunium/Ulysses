@@ -32,11 +32,11 @@ SPDX-License-Identifier: EUPL-1.2
 		<MenuItem Header="Extract" Click="ExtractGame" IsEnabled="{Binding AllowButtons}" />
 		<MenuItem Header="Options" IsEnabled="{Binding AllowButtons}">
 			<MenuItem Header="Image Format" StaysOpenOnClick="True">
-				<MenuItem Header="PNG" IsChecked="{Binding PNGSelected}" IsEnabled="{Binding PNGSupported}" StaysOpenOnClick="True"
+				<MenuItem Header="PNG" IsChecked="{Binding PNGSelected, Mode=TwoWay}" IsEnabled="{Binding PNGSupported}" StaysOpenOnClick="True"
 				          ToggleType="Radio" />
-				<MenuItem Header="TIFF" IsChecked="{Binding TIFFSelected}" IsEnabled="{Binding TIFFSupported}"
+				<MenuItem Header="TIFF" IsChecked="{Binding TIFFSelected, Mode=TwoWay}" IsEnabled="{Binding TIFFSupported}"
 				          StaysOpenOnClick="True" ToggleType="Radio" />
-				<MenuItem Header="DDS" IsChecked="{Binding DDSSelected}" StaysOpenOnClick="True" ToggleType="Radio" />
+				<MenuItem Header="DDS" IsChecked="{Binding DDSSelected, Mode=TwoWay}" StaysOpenOnClick="True" ToggleType="Radio" />
 			</MenuItem>
 		</MenuItem>
 		<MenuItem Header="{Binding Status}" IsEnabled="False" HorizontalAlignment="Stretch" />

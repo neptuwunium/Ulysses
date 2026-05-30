@@ -27,8 +27,8 @@ public partial class MainWindow : SukiWindow {
 	public static readonly DirectProperty<MainWindow, string> StatusProperty = AvaloniaProperty.RegisterDirect<MainWindow, string>("Status", o => o.Status, (o, v) => o.Status = v);
 	public static readonly DirectProperty<MainWindow, bool> AllowButtonsProperty = AvaloniaProperty.RegisterDirect<MainWindow, bool>("AllowButtons", o => o.AllowButtons, (o, v) => o.AllowButtons = v);
 	public static readonly DirectProperty<MainWindow, bool> PNGSelectedProperty = AvaloniaProperty.RegisterDirect<MainWindow, bool>("PNGSelected", o => o.PNGSelected, (o, v) => o.PNGSelected = v);
-	public static readonly DirectProperty<MainWindow, bool> TIFFSelectedProperty = AvaloniaProperty.RegisterDirect<MainWindow, bool>("TIFFSelected", o => o.PNGSelected, (o, v) => o.PNGSelected = v);
-	public static readonly DirectProperty<MainWindow, bool> DDSSelectedProperty = AvaloniaProperty.RegisterDirect<MainWindow, bool>("DDSSelected", o => o.PNGSelected, (o, v) => o.PNGSelected = v);
+	public static readonly DirectProperty<MainWindow, bool> TIFFSelectedProperty = AvaloniaProperty.RegisterDirect<MainWindow, bool>("TIFFSelected", o => o.TIFFSelected, (o, v) => o.TIFFSelected = v);
+	public static readonly DirectProperty<MainWindow, bool> DDSSelectedProperty = AvaloniaProperty.RegisterDirect<MainWindow, bool>("DDSSelected", o => o.DDSSelected, (o, v) => o.DDSSelected = v);
 	public static readonly DirectProperty<MainWindow, ObservableCollection<PlaneInformation>> PlanesProperty = AvaloniaProperty.RegisterDirect<MainWindow, ObservableCollection<PlaneInformation>>("Planes", o => o.Planes, (o, v) => o.Planes = v);
 
 	public MainWindow() {
@@ -36,7 +36,11 @@ public partial class MainWindow : SukiWindow {
 		Status = string.Empty;
 		InitializeComponent();
 		Planes = [];
-		Dispatcher.AwaitWithPriority(Reset(), DispatcherPriority.Normal);
+		if (NuTexture.ExportFormat == NuExportFormat.PNG) {
+			PNGSelected = true;
+		} else {
+			DDSSelected = true;
+		}
 	}
 
 	public ObservableCollection<PlaneInformation> Planes {
@@ -93,23 +97,7 @@ public partial class MainWindow : SukiWindow {
 	public static bool PNGSupported => PNGEncoder.IsAvailable;
 	public static bool TIFFSupported => TIFFEncoder.IsAvailable;
 
-	public async Task Reset() {
-		await Task.Delay(200);
-
-		if (NuTexture.ExportFormat == NuExportFormat.PNG) {
-			PNGSelected = true;
-		} else {
-			DDSSelected = true;
-		}
-
-		Status = "Ready";
-	}
-
 	private void ToggleAll(object? sender, RoutedEventArgs routedEventArgs) {
-		if (Planes == null) {
-			return;
-		}
-
 		var selected = (sender as CheckBox)?.IsChecked ?? false;
 		foreach (var plane in Planes) {
 			plane.Extract = selected;
