@@ -184,7 +184,7 @@ public partial class MainWindow : SukiWindow {
 						AllowButtons = false;
 					});
 
-					var safeName = plane.FriendlyName.SanitizeFilename().Replace(".", "_", StringComparison.Ordinal).SanitizeTraversal();
+					var safeName = plane.AircraftName.SanitizeFilename().Replace(".", "_", StringComparison.Ordinal).SanitizeTraversal();
 					var planePath = Path.Combine(path, $"Ac{plane.AircraftId} - {safeName}");
 
 					PlaneExtractor.SavePalette(GameContext.ColorInformation?.GetValueOrDefault(plane.AircraftName), planePath);

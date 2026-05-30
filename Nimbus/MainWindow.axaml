@@ -60,6 +60,8 @@ SPDX-License-Identifier: EUPL-1.2
 								          IsCheckedChanged="ToggleAll" /> <!-- what is this shit -->
 							</DataGridCheckBoxColumn.Header>
 						</DataGridCheckBoxColumn>
+						<DataGridTextColumn IsReadOnly="True" Header="Id" Binding="{Binding AircraftId}" />
+						<DataGridTextColumn IsReadOnly="True" Header="Internal Name" Binding="{Binding AircraftName}" />
 						<DataGridTextColumn IsReadOnly="True" Header="Name" Binding="{Binding FriendlyName}" />
 						<DataGridTextColumn IsReadOnly="True" Header="Base Plane" Binding="{Binding FriendlyBaseName}" />
 						<DataGridTextColumn IsReadOnly="True" Header="Category" Binding="{Binding Category}" />
