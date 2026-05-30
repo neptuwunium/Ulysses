@@ -146,7 +146,7 @@ public partial class MainWindow : SukiWindow {
 	private void ExtractGame(object? sender, RoutedEventArgs e) => Dispatcher.AwaitWithPriority(ExtractGameAsync(), DispatcherPriority.Normal);
 
 	private async Task ExtractGameAsync() {
-		if (Planes == null || GameContext.Manager is not { } manager) {
+		if (Planes.Count == 0 || GameContext.Manager is not { } manager) {
 			return;
 		}
 
