@@ -28,7 +28,7 @@ public sealed class DPLFile : IDisposable {
 			throw new InvalidDataException();
 		}
 
-		FHMTable = ObjectPool<Dictionary<HashId, (int Offset, FHMHeader Header)>>.Rent();
+		FHMTable = ObjectPool<Dictionary<HashId, (long Offset, FHMHeader Header)>>.Rent();
 		FHMTable.Clear();
 		FHMTable.EnsureCapacity(Header.Count);
 
@@ -50,7 +50,7 @@ public sealed class DPLFile : IDisposable {
 	public string Name { get; set; }
 	public int Priority { get; set; }
 	public MemoryMappedFile File { get; set; }
-	public Dictionary<HashId, (int Offset, FHMHeader Header)> FHMTable { get; set; }
+	public Dictionary<HashId, (long Offset, FHMHeader Header)> FHMTable { get; set; }
 	public Dictionary<uint, HashId> GroupToIdMap { get; set; }
 	public DPLHeader Header { get; }
 
@@ -58,7 +58,7 @@ public sealed class DPLFile : IDisposable {
 		File.Dispose();
 		File = null!;
 		FHMTable.Clear();
-		ObjectPool<Dictionary<HashId, (int Offset, FHMHeader Header)>>.Return(FHMTable);
+		ObjectPool<Dictionary<HashId, (long Offset, FHMHeader Header)>>.Return(FHMTable);
 		FHMTable = null!;
 		GroupToIdMap.Clear();
 		ObjectPool<Dictionary<uint, HashId>>.Return(GroupToIdMap);

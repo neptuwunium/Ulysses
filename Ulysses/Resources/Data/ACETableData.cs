@@ -26,8 +26,15 @@ public sealed class ACETableData : IDisposable {
 
 		Header = reader.Read<LVSTHeader>().ReverseEndianness();
 
+		if (Header.Magic != 0x4C565354) {
+			ColumnIds = IRentedArray<HashId>.Empty;
+			ColumnInfos = IRentedArray<LVSTColumnInfo>.Empty;
+			ColumnOffsets = IRentedArray<int>.Empty;
+			return;
+		}
+
 		var idByteSize = BinaryPrimitives.ReverseEndianness(reader.Read<int>());
-		ColumnIds = new UnownedCovariantArray<HashId>(buffer, reader.Position, idByteSize / 4);
+		ColumnIds = new UnownedCovariantArray<HashId>(buffer, (int) reader.Position, idByteSize / 4);
 		reader.Skip<byte>(idByteSize);
 		ColumnIds.Span.ReverseEndianness();
 
@@ -37,7 +44,7 @@ public sealed class ACETableData : IDisposable {
 			throw new InvalidOperationException("mismatched sizes");
 		}
 
-		ColumnOffsets = new UnownedCovariantArray<int>(buffer, reader.Position, offsetByteSize / 4);
+		ColumnOffsets = new UnownedCovariantArray<int>(buffer, (int) reader.Position, offsetByteSize / 4);
 		reader.Skip<byte>(offsetByteSize);
 		ColumnOffsets.Span.ReverseEndianness();
 

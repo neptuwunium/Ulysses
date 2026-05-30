@@ -2,11 +2,11 @@
 //
 // SPDX-License-Identifier: EUPL-1.2
 
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
-using Metsys.Bson;
-using Pluto;
+using Nimbus.DplDto;
 using Pluto.Extensions;
 using Pluto.IO.Binary;
 using Ulysses;
@@ -71,14 +71,30 @@ public static class PlaneExtractor {
 		writer.WriteLine("RGB (Hex)");
 
 		for (var i = 0; i < color.Length; i += 4) {
-			writer.WriteLine($"{(byte)(color[i + 0] * 255):X02}{(byte)(color[i + 1] * 255):X02}{(byte)(color[i + 2] * 255):X02}");
+			writer.WriteLine($"{(byte) (color[i + 0] * 255):X02}{(byte) (color[i + 1] * 255):X02}{(byte) (color[i + 2] * 255):X02}");
 		}
 
 		writer.WriteLine();
 		writer.WriteLine("RGBA (Hex)");
 
 		for (var i = 0; i < color.Length; i += 4) {
-			writer.WriteLine($"{(byte)(color[i + 0] * 255):X02}{(byte)(color[i + 1] * 255):X02}{(byte)(color[i + 2] * 255):X02}{(byte)(color[i + 3] * 255):X02}");
+			writer.WriteLine($"{(byte) (color[i + 0] * 255):X02}{(byte) (color[i + 1] * 255):X02}{(byte) (color[i + 2] * 255):X02}{(byte) (color[i + 3] * 255):X02}");
+		}
+	}
+
+	public static void SavePalette(List<ColorInformation>? info, string path) {
+		if (info == null || info.Count == 0) {
+			return;
+		}
+
+		Directory.CreateDirectory(path);
+		using var stream = new FileStream(Path.Combine(path, "color.tsv"), FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
+		using var writer = new StreamWriter(stream);
+		writer.NewLine = "\n";
+
+		writer.WriteLine("colorId\titemId\tpaletteNum\tcolorNo\tprimary\tsecondary");
+		foreach (var color in info) {
+			writer.WriteLine($"{color.ColorId}\t{color.ItemId}\t{color.PaletteNum}\t{color.ColorNo}\t{color.Primary:x08}\t{color.Secondary:x08}");
 		}
 	}
 

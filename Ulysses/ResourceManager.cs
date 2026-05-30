@@ -53,9 +53,13 @@ public sealed class ResourceManager : IDisposable {
 				continue;
 			}
 
-			var dpl = new DPLFile(pacPath, priority);
-			Log.Information("Mounted DPL {DPLName} (Version {Version}, Build Date {Build})", dpl.Name, dpl.Header.ACE.Version, dpl.Header.ACE.Date);
-			DPL.Add(dpl.Name, dpl);
+			try {
+				var dpl = new DPLFile(pacPath, priority);
+				Log.Information("Mounted DPL {DPLName} (Version {Version}, Build Date {Build})", dpl.Name, dpl.Header.ACE.Version, dpl.Header.ACE.Date);
+				DPL.Add(dpl.Name, dpl);
+			} catch (Exception ex) {
+				Log.Error(ex, "Cannot mount DPL {Path}", pacPath);
+			}
 		}
 	}
 
@@ -77,6 +81,8 @@ public sealed class ResourceManager : IDisposable {
 		if (DPL[dplId].FHMTable.TryGetValue(id, out var fhm)) {
 			header = fhm.Header;
 		}
+
+		Log.Information("Reading File {id}", id.ToString());
 
 		return DPL[dplId].ReadFile(id);
 	}

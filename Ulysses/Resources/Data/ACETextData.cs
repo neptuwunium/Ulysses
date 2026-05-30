@@ -32,14 +32,19 @@ public sealed class ACETextData : IDisposable {
 
 		Languages = ObjectPool<Dictionary<string, int>>.Rent();
 		Languages.Clear();
-		Languages.EnsureCapacity(Header.LanguageCount);
 
 		Texts = ObjectPool<List<ACTTextRef>>.Rent();
 		Texts.Clear();
-		Texts.EnsureCapacity(Header.TextCount);
 
 		Hashes = ObjectPool<Dictionary<HashId, ACTHash>>.Rent();
 		Hashes.Clear();
+
+		if (Header.Magic != 0x41435400) {
+			return;
+		}
+
+		Languages.EnsureCapacity(Header.LanguageCount);
+		Texts.EnsureCapacity(Header.TextCount);
 		Hashes.EnsureCapacity(Header.HashCount);
 
 		reader.Position = Header.LanguageTableOffset;

@@ -26,7 +26,7 @@ public class PlaneInformation : AvaloniaObject {
 		AircraftId = row.GetCellOrDefault("AcId", AircraftId);
 		BaseAircraftId = row.GetCellOrDefault(0x86f9c888, AircraftId);
 		Category = (PlaneCategory) row.GetCellOrDefault("Category", 0);
-		Rarity = row.GetCellOrDefault("Rarity", Rarity);
+		Rarity = row.GetCellOrDefault("Rarity", Rarity) + 1;
 		Arms1 = row.GetCellOrDefault(0x16a75a36, default(HashId)).ToString();
 		Arms2 = row.GetCellOrDefault(0x1be47cef, default(HashId)).ToString();
 		Arms3 = row.GetCellOrDefault(0x1f256158, default(HashId)).ToString();

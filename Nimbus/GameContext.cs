@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using Avalonia.Threading;
 using Nimbus.DplDto;
 using Pluto;
+using Serilog;
 using Ulysses;
 using Ulysses.Resources;
 using Ulysses.Struct;
@@ -18,27 +19,53 @@ public static partial class GameContext {
 
 	public static Dictionary<string, string?>? Localization { get; set; }
 	public static Dictionary<int, PlaneInformation>? PlaneInformation { get; set; }
+	public static Dictionary<string, List<ColorInformation>>? ColorInformation { get; set; }
 
 	[GeneratedRegex(@"\p{IsPrivateUse}")]
 	private static partial Regex RemovePrivateUse { get; }
 
 	public static void Load(string path) {
+		if (ColorInformation is not null) {
+			foreach (var color in ColorInformation.Values) {
+				color.Clear();
+				ObjectPool<List<ColorInformation>>.Return(color);
+			}
+		}
+
+		PlaneInformation?.Clear();
 		ObjectPool<Dictionary<int, PlaneInformation>>.Return(PlaneInformation);
-		ObjectPool<Dictionary<string, string?>>.Return(Localization);
 		PlaneInformation = null;
+
+		ColorInformation?.Clear();
+		ObjectPool<Dictionary<string, List<ColorInformation>>>.Return(ColorInformation);
+		ColorInformation = null!;
+
+		Localization?.Clear();
+		ObjectPool<Dictionary<string, string?>>.Return(Localization);
 		Localization = null;
 
+		Log.Information("Mounting {Path}", path);
 		Manager?.Unmount();
 		Manager = ResourceManager.Instance;
 		Manager.Mount(path);
 		Manager.Collect();
 
 		Dispatcher.UIThread.Invoke(() => {
-			LoadPlaneInformation();
+			Localization = ObjectPool<Dictionary<string, string?>>.Rent();
+			Localization.Clear();
+
+
+			Log.Information("Reading Tables...");
+			LoadDPLInformation();
+			Log.Information("Reading Localization...");
 			LoadLocalization();
+			Log.Information("Reading Old Localization...");
 			LoadOldLocalization();
+			Log.Information("Reading Root Localization...");
 			LoadRootLocalization();
+			Log.Information("Reading Menu Localization...");
 			LoadMenuText();
+			Log.Information("Done!");
 		});
 	}
 
@@ -97,19 +124,18 @@ public static partial class GameContext {
 	}
 
 	private static void LoadText(FHMFile fhm, int index, string name) {
-		using var info = new ACEText(fhm, fhm.GetItemHeader(index), name);
+		using var info = new ACEText(fhm, fhm.GetItemHeader(index), name, true);
 		if (info.Data is not { } data) {
 			return;
 		}
 
-		Localization ??= ObjectPool<Dictionary<string, string?>>.Rent();
 		foreach (var (hash, hashInfo) in data.Hashes) {
 			var text = data.GetStringForLanguage(hash, 0);
 			if (string.IsNullOrEmpty(text)) {
 				continue;
 			}
 
-			Localization.TryAdd(hashInfo.Label, RemovePrivateUse.Replace(text, ""));
+			Localization!.TryAdd(hashInfo.Label, RemovePrivateUse.Replace(text, ""));
 		}
 	}
 
@@ -124,26 +150,47 @@ public static partial class GameContext {
 		LoadText(containerFhm, 160, "DPL_UI_MENU");
 	}
 
-	private static void LoadPlaneInformation() {
+	private static void LoadDPLInformation() {
 		using var infoFhm = Manager?.ReadFile("DPL_INFORMATION");
 		if (infoFhm is null) {
 			return;
 		}
 
-		using var info = new ACETable(infoFhm, infoFhm.GetItemHeader(6), "DPL_INFORMATION");
-		if (info.Data is not { } data) {
-			return;
+		Log.Information("Loading Plane Information...");
+		using (var info = new ACETable(infoFhm, infoFhm.GetItemHeader(6), "DPL_INFORMATION", true)) {
+			if (info.Data is { } data) {
+				PlaneInformation = ObjectPool<Dictionary<int, PlaneInformation>>.Rent();
+				PlaneInformation.Clear();
+
+				foreach (var row in data.GetRows()) {
+					var dto = new PlaneInformation(row);
+					PlaneInformation[dto.AircraftId] = dto;
+				}
+
+				foreach (var plane in PlaneInformation.Values) {
+					if (plane.BaseAircraftId != plane.AircraftId && PlaneInformation.TryGetValue(plane.BaseAircraftId, out var basePlane)) {
+						plane.BaseAircraftName = basePlane.AircraftName;
+					}
+				}
+			}
 		}
 
-		PlaneInformation = ObjectPool<Dictionary<int, PlaneInformation>>.Rent();
-		foreach (var row in data.GetRows()) {
-			var dto = new PlaneInformation(row);
-			PlaneInformation[dto.AircraftId] = dto;
-		}
+		Log.Information("Loading Color Information...");
+		using (var info = new ACETable(infoFhm, infoFhm.GetItemHeader(7), "DPL_INFORMATION", true)) {
+			if (info.Data is { } data) {
+				ColorInformation = ObjectPool<Dictionary<string, List<ColorInformation>>>.Rent();
+				ColorInformation.Clear();
 
-		foreach (var plane in PlaneInformation.Values) {
-			if (plane.BaseAircraftId != plane.AircraftId && PlaneInformation.TryGetValue(plane.BaseAircraftId, out var basePlane)) {
-				plane.BaseAircraftName = basePlane.AircraftName;
+				foreach (var row in data.GetRows()) {
+					var dto = new ColorInformation(row);
+
+					if (!ColorInformation.TryGetValue(dto.AircraftId, out var planeColor)) {
+						planeColor = ColorInformation[dto.AircraftId] = ObjectPool<List<ColorInformation>>.Rent();
+						planeColor.Clear();
+					}
+
+					planeColor.Add(dto);
+				}
 			}
 		}
 	}

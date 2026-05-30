@@ -25,7 +25,7 @@ SPDX-License-Identifier: EUPL-1.2
                  DataContext="{Binding RelativeSource={RelativeSource Self}}"
                  Title="Nimbus">
 	<suki:SukiWindow.LogoContent>
-		<Image Source="Resources/icon.ico" Width="32" Height="32"/>
+		<Image Source="Resources/icon.ico" Width="32" Height="32" />
 	</suki:SukiWindow.LogoContent>
 	<suki:SukiWindow.MenuItems>
 		<MenuItem Header="Open" Click="LoadGame" IsEnabled="{Binding AllowButtons}" />
@@ -46,7 +46,7 @@ SPDX-License-Identifier: EUPL-1.2
 			<TabItem Header="Planes">
 				<DataGrid
 					SelectionMode="Single"
-					ItemsSource="{Binding Planes.Values, FallbackValue={Binding EmptyPlanes}}"
+					ItemsSource="{Binding Planes, FallbackValue={Binding EmptyPlanes}}"
 					IsReadOnly="{Binding AllowButtons, Converter={StaticResource InvertBoolean}}"
 					AutoGenerateColumns="False">
 					<DataGrid.Columns>

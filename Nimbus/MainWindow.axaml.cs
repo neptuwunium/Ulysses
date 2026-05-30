@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -28,16 +29,17 @@ public partial class MainWindow : SukiWindow {
 	public static readonly DirectProperty<MainWindow, bool> PNGSelectedProperty = AvaloniaProperty.RegisterDirect<MainWindow, bool>("PNGSelected", o => o.PNGSelected, (o, v) => o.PNGSelected = v);
 	public static readonly DirectProperty<MainWindow, bool> TIFFSelectedProperty = AvaloniaProperty.RegisterDirect<MainWindow, bool>("TIFFSelected", o => o.PNGSelected, (o, v) => o.PNGSelected = v);
 	public static readonly DirectProperty<MainWindow, bool> DDSSelectedProperty = AvaloniaProperty.RegisterDirect<MainWindow, bool>("DDSSelected", o => o.PNGSelected, (o, v) => o.PNGSelected = v);
-	public static readonly DirectProperty<MainWindow, Dictionary<int, PlaneInformation>?> PlanesProperty = AvaloniaProperty.RegisterDirect<MainWindow, Dictionary<int, PlaneInformation>?>("Planes", o => o.Planes, (o, v) => o.Planes = v);
+	public static readonly DirectProperty<MainWindow, ObservableCollection<PlaneInformation>> PlanesProperty = AvaloniaProperty.RegisterDirect<MainWindow, ObservableCollection<PlaneInformation>>("Planes", o => o.Planes, (o, v) => o.Planes = v);
 
 	public MainWindow() {
 		AllowButtons = true;
 		Status = string.Empty;
 		InitializeComponent();
+		Planes = [];
 		Dispatcher.AwaitWithPriority(Reset(), DispatcherPriority.Normal);
 	}
 
-	public Dictionary<int, PlaneInformation>? Planes {
+	public ObservableCollection<PlaneInformation> Planes {
 		get;
 		set => SetAndRaise(PlanesProperty, ref field, value);
 	}
@@ -109,7 +111,7 @@ public partial class MainWindow : SukiWindow {
 		}
 
 		var selected = (sender as CheckBox)?.IsChecked ?? false;
-		foreach (var plane in Planes.Values) {
+		foreach (var plane in Planes) {
 			plane.Extract = selected;
 		}
 	}
@@ -139,12 +141,18 @@ public partial class MainWindow : SukiWindow {
 				GameContext.Load(path);
 			} finally {
 				Dispatcher.UIThread.Invoke(() => {
-					Planes = GameContext.PlaneInformation;
+					if (GameContext.PlaneInformation is { } planes) {
+						Planes.Clear();
+						foreach (var plane in planes.Values.OrderBy(x => x.FriendlyName).ThenBy(x => x.FriendlyBaseName)) {
+							Planes.Add(plane);
+						}
+					}
+
 					Status = string.Empty;
 					AllowButtons = true;
 				});
 			}
-		}) { Name = "LoadDPL"}.Start();
+		}) { Name = "LoadDPL" }.Start();
 	}
 
 	private void ExtractGame(object? sender, RoutedEventArgs e) => Dispatcher.AwaitWithPriority(ExtractGameAsync(), DispatcherPriority.Normal);
@@ -169,14 +177,17 @@ public partial class MainWindow : SukiWindow {
 
 		new Thread(() => {
 			try {
-				var toExtract = Planes.Values.Where(x => x.Extract);
+				var toExtract = Planes.Where(x => x.Extract);
 				foreach (var plane in toExtract) {
 					Dispatcher.UIThread.Invoke(() => {
 						Status = $"Extracting {plane.FriendlyName}...";
 						AllowButtons = false;
 					});
 
-					var planePath = Path.Combine(path, plane.FriendlyName.SanitizeFilename().Replace("\\", "", StringComparison.Ordinal).Replace("/", "", StringComparison.Ordinal));
+					var safeName = plane.FriendlyName.SanitizeFilename().Replace(".", "_", StringComparison.Ordinal).SanitizeTraversal();
+					var planePath = Path.Combine(path, $"Ac{plane.AircraftId} - {safeName}");
+
+					PlaneExtractor.SavePalette(GameContext.ColorInformation?.GetValueOrDefault(plane.AircraftName), planePath);
 
 					foreach (var (prefix, name) in PlaneExtractor.Parts) {
 						var dplName = $"{prefix}{plane.AircraftName.ToUpperInvariant()}";
@@ -201,7 +212,7 @@ public partial class MainWindow : SukiWindow {
 					Status = string.Empty;
 					AllowButtons = true;
 
-					foreach (var plane in Planes.Values) {
+					foreach (var plane in Planes) {
 						plane.Extract = false;
 					}
 				});
