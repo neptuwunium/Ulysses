@@ -36,7 +36,7 @@ public class NuTexture : Resource {
 		Surfaces.Clear();
 
 		using var data = fhm[item];
-		if (data.Length == 0) {
+		if (data.Length < Unsafe.SizeOf<NuTextureHeader>()) {
 			return;
 		}
 
@@ -100,7 +100,7 @@ public class NuTexture : Resource {
 
 	private void ProcessGPU(FHMFile fhm, int index, int surfaceIndex) {
 		using var surfaceBuf = fhm[index];
-		if (surfaceBuf.Length == 0) {
+		if (surfaceBuf.Length < Unsafe.SizeOf<NuTextureSurface>()) {
 			return;
 		}
 
@@ -117,7 +117,7 @@ public class NuTexture : Resource {
 
 	private void ProcessRAM(FHMFile fhm, int index) {
 		var surfaceBuf = fhm[index];
-		if (surfaceBuf.Length == 0) {
+		if (surfaceBuf.Length < Unsafe.SizeOf<NuTextureHeader>()) {
 			surfaceBuf.Dispose();
 			return;
 		}

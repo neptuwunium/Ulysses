@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: EUPL-1.2
 
+using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Avalonia.Threading;
@@ -124,18 +125,22 @@ public static partial class GameContext {
 	}
 
 	private static void LoadText(FHMFile fhm, int index, string name) {
-		using var info = new ACEText(fhm, fhm.GetItemHeader(index), name, true);
-		if (info.Data is not { } data) {
-			return;
-		}
-
-		foreach (var (hash, hashInfo) in data.Hashes) {
-			var text = data.GetStringForLanguage(hash, 0);
-			if (string.IsNullOrEmpty(text)) {
-				continue;
+		try {
+			using var info = new ACEText(fhm, fhm.GetItemHeader(index), name, true);
+			if (info.Data is not { } data) {
+				return;
 			}
 
-			Localization!.TryAdd(hashInfo.Label, RemovePrivateUse.Replace(text, ""));
+			foreach (var (hash, hashInfo) in data.Hashes) {
+				var text = data.GetStringForLanguage(hash, 0);
+				if (string.IsNullOrEmpty(text)) {
+					continue;
+				}
+
+				Localization!.TryAdd(hashInfo.Label, RemovePrivateUse.Replace(text, ""));
+			}
+		} catch (Exception ex) {
+			Log.Error(ex, "Cannot load text...");
 		}
 	}
 
@@ -156,42 +161,50 @@ public static partial class GameContext {
 			return;
 		}
 
-		Log.Information("Loading Plane Information...");
-		using (var info = new ACETable(infoFhm, infoFhm.GetItemHeader(6), "DPL_INFORMATION", true)) {
-			if (info.Data is { } data) {
-				PlaneInformation = ObjectPool<Dictionary<int, PlaneInformation>>.Rent();
-				PlaneInformation.Clear();
+		try {
+			Log.Information("Loading Plane Information...");
+			using (var info = new ACETable(infoFhm, infoFhm.GetItemHeader(6), "DPL_INFORMATION", true)) {
+				if (info.Data is { } data) {
+					PlaneInformation = ObjectPool<Dictionary<int, PlaneInformation>>.Rent();
+					PlaneInformation.Clear();
 
-				foreach (var row in data.GetRows()) {
-					var dto = new PlaneInformation(row);
-					PlaneInformation[dto.AircraftId] = dto;
-				}
+					foreach (var row in data.GetRows()) {
+						var dto = new PlaneInformation(row);
+						PlaneInformation[dto.AircraftId] = dto;
+					}
 
-				foreach (var plane in PlaneInformation.Values) {
-					if (plane.BaseAircraftId != plane.AircraftId && PlaneInformation.TryGetValue(plane.BaseAircraftId, out var basePlane)) {
-						plane.BaseAircraftName = basePlane.AircraftName;
+					foreach (var plane in PlaneInformation.Values) {
+						if (plane.BaseAircraftId != plane.AircraftId && PlaneInformation.TryGetValue(plane.BaseAircraftId, out var basePlane)) {
+							plane.BaseAircraftName = basePlane.AircraftName;
+						}
 					}
 				}
 			}
+		} catch (Exception ex) {
+			Log.Error(ex, "Cannot load plane information...");
 		}
 
-		Log.Information("Loading Color Information...");
-		using (var info = new ACETable(infoFhm, infoFhm.GetItemHeader(7), "DPL_INFORMATION", true)) {
-			if (info.Data is { } data) {
-				ColorInformation = ObjectPool<Dictionary<string, List<ColorInformation>>>.Rent();
-				ColorInformation.Clear();
+		try {
+			Log.Information("Loading Color Information...");
+			using (var info = new ACETable(infoFhm, infoFhm.GetItemHeader(7), "DPL_INFORMATION", true)) {
+				if (info.Data is { } data) {
+					ColorInformation = ObjectPool<Dictionary<string, List<ColorInformation>>>.Rent();
+					ColorInformation.Clear();
 
-				foreach (var row in data.GetRows()) {
-					var dto = new ColorInformation(row);
+					foreach (var row in data.GetRows()) {
+						var dto = new ColorInformation(row);
 
-					if (!ColorInformation.TryGetValue(dto.AircraftId, out var planeColor)) {
-						planeColor = ColorInformation[dto.AircraftId] = ObjectPool<List<ColorInformation>>.Rent();
-						planeColor.Clear();
+						if (!ColorInformation.TryGetValue(dto.AircraftId, out var planeColor)) {
+							planeColor = ColorInformation[dto.AircraftId] = ObjectPool<List<ColorInformation>>.Rent();
+							planeColor.Clear();
+						}
+
+						planeColor.Add(dto);
 					}
-
-					planeColor.Add(dto);
 				}
 			}
+		} catch (Exception ex) {
+			Log.Error(ex, "Cannot load color information...");
 		}
 	}
 }

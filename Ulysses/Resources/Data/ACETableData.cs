@@ -22,14 +22,19 @@ public sealed class ACETableData : IDisposable {
 		Buffer = buffer;
 		LeaveOpen = leaveOpen;
 
+		ColumnIds = IRentedArray<HashId>.Empty;
+		ColumnInfos = IRentedArray<LVSTColumnInfo>.Empty;
+		ColumnOffsets = IRentedArray<int>.Empty;
+
+		if (buffer.Length <= Unsafe.SizeOf<LVSTHeader>()) {
+			return;
+		}
+
 		using var reader = new ArrayPoolBinaryReader(buffer, true);
 
 		Header = reader.Read<LVSTHeader>().ReverseEndianness();
 
 		if (Header.Magic != 0x4C565354) {
-			ColumnIds = IRentedArray<HashId>.Empty;
-			ColumnInfos = IRentedArray<LVSTColumnInfo>.Empty;
-			ColumnOffsets = IRentedArray<int>.Empty;
 			return;
 		}
 

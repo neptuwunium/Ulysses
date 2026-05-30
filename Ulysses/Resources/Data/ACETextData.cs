@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: EUPL-1.2
 
 using System.Buffers.Binary;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json.Serialization;
@@ -26,10 +27,6 @@ public sealed class ACETextData : IDisposable {
 		Buffer = buffer;
 		LeaveOpen = leaveOpen;
 
-		using var reader = new ArrayPoolBinaryReader(buffer, true);
-
-		Header = reader.Read<ACTHeader>().ReverseEndianness();
-
 		Languages = ObjectPool<Dictionary<string, int>>.Rent();
 		Languages.Clear();
 
@@ -38,6 +35,14 @@ public sealed class ACETextData : IDisposable {
 
 		Hashes = ObjectPool<Dictionary<HashId, ACTHash>>.Rent();
 		Hashes.Clear();
+
+		if (buffer.Length <= Unsafe.SizeOf<ACTHeader>()) {
+			return;
+		}
+
+		using var reader = new ArrayPoolBinaryReader(buffer, true);
+
+		Header = reader.Read<ACTHeader>().ReverseEndianness();
 
 		if (Header.Magic != 0x41435400) {
 			return;
