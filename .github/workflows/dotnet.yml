@@ -15,20 +15,20 @@ jobs:
                 rid: [ linux-x64, linux-musl-x64, linux-arm64, linux-musl-arm64, osx-arm64, osx-x64, win-x64 ]
         runs-on: ubuntu-latest
         steps:
-            -   uses: actions/checkout@v4
+            -   uses: actions/checkout@v6
                 with:
                     fetch-depth: 0
                     submodules: 'recursive'
-            -   uses: actions/setup-dotnet@v4
+            -   uses: actions/setup-dotnet@v5
                 with:
                     dotnet-version: 11.x
             -   run: dotnet publish Nimbus -c Release -o ${{ github.workspace }}/Publish/Nimbus/${{matrix.rid}} -f net11.0 -r ${{ matrix.rid }}
             -   run: dotnet publish Nimbus -c Release -o ${{ github.workspace }}/Publish/Nimbus-Standalone/${{matrix.rid}} -f net11.0 -r ${{ matrix.rid }} --sc
-            -   uses: actions/upload-artifact@v4
+            -   uses: actions/upload-artifact@v7
                 with:
                     name: Nimbus-${{github.ref_name}}-${{ matrix.rid }}
                     path: Publish/Nimbus/${{matrix.rid}}
-            -   uses: actions/upload-artifact@v4
+            -   uses: actions/upload-artifact@v7
                 with:
                     name: Nimbus-${{github.ref_name}}-${{ matrix.rid }}-Standalone
                     path: Publish/Nimbus-Standalone/${{matrix.rid}}
